@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>イベント一覧｜経営実践研究会</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .filter-tabs{display:flex;gap:6px;margin-bottom:16px}
+  .filter-tab{padding:6px 14px;border:1.5px solid var(--border);border-radius:20px;background:#fff;font-size:12px;font-weight:700;color:var(--ink-mid);cursor:pointer}
+  .filter-tab.active{background:var(--indigo);border-color:var(--indigo);color:#fff}
+  .event-item{display:flex;gap:14px;padding:16px;border-bottom:1px solid var(--border);cursor:pointer;transition:.12s;align-items:flex-start}
+  .event-item:last-child{border-bottom:none}
+  .event-item:hover{background:#FBFAF7}
+  .ev-date{flex-shrink:0;width:60px;text-align:center;border-right:2px solid var(--gold);padding-right:12px}
+  .ev-date .m{font-size:11px;color:var(--gold-dark);font-weight:700}
+  .ev-date .d{font-size:24px;font-weight:800;color:var(--ink);line-height:1.1}
+  .ev-date .w{font-size:11px;color:var(--ink-light)}
+  .ev-main{flex:1;min-width:0}
+  .ev-title{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:4px}
+  .ev-meta{font-size:12px;color:var(--ink-mid);display:flex;gap:12px;flex-wrap:wrap}
+  .ev-meta span{display:inline-flex;align-items:center;gap:3px}
+  .ev-past{opacity:.55}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="page-head">
+    <div class="page-title"><span class="ico">📅</span>イベント一覧</div>
+    <button class="btn btn-primary" id="addBtn" style="display:none">＋ イベント追加</button>
+  </div>
+  <div class="filter-tabs">
+    <div class="filter-tab active" data-f="upcoming">開催予定</div>
+    <div class="filter-tab" data-f="past">過去</div>
+    <div class="filter-tab" data-f="all">すべて</div>
+  </div>
+  <div class="card"><div id="list"><div class="loading">読み込み中...</div></div></div>
+</div>
+
+<!-- イベント追加/編集モーダル -->
+<div class="modal-ov" id="evModal">
+  <div class="modal">
+    <div class="modal-title" id="evModalTitle">イベント追加</div>
+    <input type="hidden" id="ev-id">
+    <div class="field"><label>タイトル <span style="color:var(--red)">*</span></label><input id="ev-title" placeholder="例：7月例会"></div>
+    <div class="field" style="display:flex;gap:10px">
+      <div style="flex:1"><label>開始日時 <span style="color:var(--red)">*</span></label><input type="datetime-local" id="ev-start"></div>
+      <div style="flex:1"><label>終了日時</label><input type="datetime-local" id="ev-end"></div>
+    </div>
+    <div class="field"><label>開催場所</label><input id="ev-location" placeholder="例：〇〇会館 3F"></div>
+    <div class="field"><label>内容・概要</label><textarea id="ev-desc" placeholder="イベントの内容を入力"></textarea></div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" id="evCancel">キャンセル</button>
+      <button class="btn btn-primary" id="evSave">保存する</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { collection, getDocs, addDoc, updateDoc, doc, serverTimestamp, query, orderBy }
+    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+  import { db } from './firebase-config.js';
+  import { requireAuth, renderTopbar, canEdit } from './auth.js';
+
+  let me = null;
+  let allEvents = [];
+  let filter = 'upcoming';
+
+  const WD = ['日','月','火','水','木','金','土'];
+  function fmtDate(ts) {
+    const d = ts?.toDate ? ts.toDate() : (ts ? new Date(ts) : null);
+    return d;
+  }
+  function toLocalInput(d) {
+    if (!d) return '';
+    const p = n => String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+  }
+
+  (async () => {
+    me = await requireAuth();
+    renderTopbar(me, 'events');
+    if (canEdit(me)) document.getElementById('addBtn').style.display = 'inline-block';
+    await loadEvents();
+  })();
+
+  async function loadEvents() {
+    const el = document.getElementById('list');
+    try {
+      const snap = await getDocs(query(collection(db, 'events'), orderBy('startAt', 'asc')));
+      allEvents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      render();
+    } catch (e) {
+      el.innerHTML = `<div class="empty" style="color:var(--red)">読み込みエラー：${e.message}</div>`;
+    }
+  }
+
+  function render() {
+    const el = document.getElementById('list');
+    const now = new Date();
+    let rows = allEvents.map(ev => ({ ...ev, _d: fmtDate(ev.startAt) }));
+    if (filter === 'upcoming') rows = rows.filter(r => r._d && r._d >= new Date(now.toDateString())).sort((a,b)=>a._d-b._d);
+    else if (filter === 'past') rows = rows.filter(r => !r._d || r._d < new Date(now.toDateString())).sort((a,b)=>b._d-a._d);
+    else rows.sort((a,b)=> (b._d||0)-(a._d||0));
+
+    if (!rows.length) { el.innerHTML = '<div class="empty">該当するイベントはありません</div>'; return; }
+
+    el.innerHTML = rows.map(ev => {
+      const d = ev._d;
+      const past = d && d < now;
+      const dateBox = d ? `
+        <div class="ev-date">
+          <div class="m">${d.getFullYear()}.${d.getMonth()+1}</div>
+          <div class="d">${d.getDate()}</div>
+          <div class="w">(${WD[d.getDay()]})</div>
+        </div>` : `<div class="ev-date"><div class="w">日時未定</div></div>`;
+      const time = d ? `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` : '';
+      return `<div class="event-item ${past?'ev-past':''}" onclick="location.href='event.html?id=${ev.id}'">
+        ${dateBox}
+        <div class="ev-main">
+          <div class="ev-title">${esc(ev.title)}</div>
+          <div class="ev-meta">
+            ${time ? `<span>🕐 ${time}</span>` : ''}
+            ${ev.location ? `<span>📍 ${esc(ev.location)}</span>` : ''}
+            ${past ? '<span class="badge badge-gray">終了</span>' : '<span class="badge badge-gold">予定</span>'}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+  // フィルタタブ
+  document.querySelectorAll('.filter-tab').forEach(t => t.onclick = () => {
+    document.querySelectorAll('.filter-tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active'); filter = t.dataset.f; render();
+  });
+
+  // ── 追加・編集モーダル ──
+  const modal = document.getElementById('evModal');
+  function openModal(ev) {
+    document.getElementById('evModalTitle').textContent = ev ? 'イベント編集' : 'イベント追加';
+    document.getElementById('ev-id').value = ev?.id || '';
+    document.getElementById('ev-title').value = ev?.title || '';
+    document.getElementById('ev-start').value = ev?.startAt ? toLocalInput(fmtDate(ev.startAt)) : '';
+    document.getElementById('ev-end').value = ev?.endAt ? toLocalInput(fmtDate(ev.endAt)) : '';
+    document.getElementById('ev-location').value = ev?.location || '';
+    document.getElementById('ev-desc').value = ev?.description || '';
+    modal.classList.add('open');
+  }
+  document.getElementById('addBtn').onclick = () => openModal(null);
+  document.getElementById('evCancel').onclick = () => modal.classList.remove('open');
+
+  document.getElementById('evSave').onclick = async () => {
+    const id = document.getElementById('ev-id').value;
+    const title = document.getElementById('ev-title').value.trim();
+    const startStr = document.getElementById('ev-start').value;
+    if (!title || !startStr) { showToast('タイトルと開始日時は必須です'); return; }
+    const endStr = document.getElementById('ev-end').value;
+    const data = {
+      title,
+      startAt: new Date(startStr),
+      endAt: endStr ? new Date(endStr) : null,
+      location: document.getElementById('ev-location').value.trim(),
+      description: document.getElementById('ev-desc').value.trim(),
+      updatedAt: serverTimestamp(),
+    };
+    const btn = document.getElementById('evSave');
+    btn.disabled = true; btn.textContent = '保存中...';
+    try {
+      if (id) {
+        await updateDoc(doc(db, 'events', id), data);
+      } else {
+        await addDoc(collection(db, 'events'), { ...data, createdBy: me.uid, createdAt: serverTimestamp() });
+      }
+      modal.classList.remove('open');
+      await loadEvents();
+      showToast('保存しました');
+    } catch (e) {
+      showToast('保存に失敗しました：' + e.message);
+    }
+    btn.disabled = false; btn.textContent = '保存する';
+  };
+
+  function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+</script>
+</body>
+</html>

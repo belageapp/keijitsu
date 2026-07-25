@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>ログイン｜経営実践研究会</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  body{display:flex;align-items:center;justify-content:center;padding:20px}
+  .login-box{background:#fff;border:1px solid var(--border);border-radius:18px;padding:40px 34px;max-width:400px;width:100%;text-align:center;box-shadow:0 6px 30px var(--shadow)}
+  .login-brand{font-size:22px;font-weight:800;color:var(--indigo);letter-spacing:.03em}
+  .login-brand .en{display:block;font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.22em;margin-top:4px}
+  .login-sub{font-size:13px;color:var(--ink-light);margin:8px 0 28px}
+  .login-box .field{text-align:left}
+  .login-btn{width:100%;margin-top:8px}
+  .login-err{color:var(--red);font-size:13px;margin-top:14px;min-height:18px}
+  .login-foot{font-size:11px;color:var(--ink-light);margin-top:22px;line-height:1.7}
+  .reset-link{color:var(--gold-dark);font-weight:600;cursor:pointer;font-size:12px;margin-top:10px;display:inline-block}
+</style>
+</head>
+<body>
+<div class="login-box">
+  <div class="login-brand">経営実践研究会<span class="en">KEIJITSU</span></div>
+  <div class="login-sub">会員情報共有システム</div>
+  <div class="field">
+    <label>メールアドレス</label>
+    <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
+  </div>
+  <div class="field">
+    <label>パスワード</label>
+    <input type="password" id="password" placeholder="パスワード" autocomplete="current-password">
+  </div>
+  <button class="btn btn-primary login-btn" id="loginBtn">ログイン</button>
+  <div class="login-err" id="err"></div>
+  <div><span class="reset-link" id="resetLink">パスワードをお忘れの方はこちら</span></div>
+  <div class="login-foot">アカウントは事務局が発行します。<br>ログインできない場合は事務局にご連絡ください。</div>
+</div>
+
+<script type="module">
+  import { signInWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+  import { auth } from './firebase-config.js';
+
+  // 既にログイン済みならイベント一覧へ
+  onAuthStateChanged(auth, (user) => { if (user) location.href = 'index.html'; });
+
+  const errEl = document.getElementById('err');
+  async function doLogin() {
+    const email = document.getElementById('email').value.trim();
+    const pw    = document.getElementById('password').value;
+    errEl.textContent = '';
+    if (!email || !pw) { errEl.textContent = 'メールアドレスとパスワードを入力してください'; return; }
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true; btn.textContent = 'ログイン中...';
+    try {
+      await signInWithEmailAndPassword(auth, email, pw);
+      location.href = 'index.html';
+    } catch (e) {
+      const msg = {
+        'auth/invalid-credential': 'メールアドレスまたはパスワードが正しくありません',
+        'auth/user-not-found': 'このメールアドレスは登録されていません',
+        'auth/wrong-password': 'パスワードが正しくありません',
+        'auth/too-many-requests': 'しばらく時間をおいて再度お試しください',
+      }[e.code] || ('ログインに失敗しました：' + e.message);
+      errEl.textContent = msg;
+      btn.disabled = false; btn.textContent = 'ログイン';
+    }
+  }
+  document.getElementById('loginBtn').onclick = doLogin;
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+  document.getElementById('resetLink').onclick = async () => {
+    const email = document.getElementById('email').value.trim();
+    if (!email) { errEl.textContent = 'メールアドレスを入力してから押してください'; return; }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      errEl.style.color = 'var(--green)';
+      errEl.textContent = 'パスワード再設定メールを送信しました';
+    } catch (e) {
+      errEl.textContent = '送信に失敗しました：' + e.message;
+    }
+  };
+</script>
+</body>
+</html>

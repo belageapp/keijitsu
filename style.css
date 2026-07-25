@@ -1,0 +1,109 @@
+/* ===================================================
+   style.css - 経営実践研究会 共通スタイル
+   落ち着いた和モダン配色（藍・金・生成り）
+=================================================== */
+:root{
+  --bg:#F5F3EF;          /* 生成り背景 */
+  --card:#FFFFFF;
+  --border:#E5E0D8;
+  --ink:#3A342B;         /* 濃い墨 */
+  --ink-mid:#6B6459;
+  --ink-light:#9A9284;
+  --gold:#B08D3F;        /* 金 */
+  --gold-dark:#8F7130;
+  --indigo:#2E4A6B;      /* 藍 */
+  --indigo-light:#EAF0F6;
+  --green:#3F7A54;
+  --red:#B5493F;
+  --shadow:rgba(58,52,43,0.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:'Noto Sans JP','Hiragino Kaku Gothic ProN',sans-serif;
+  background:var(--bg); color:var(--ink);
+  font-size:14px; line-height:1.7; min-height:100dvh;
+}
+a{color:inherit;text-decoration:none}
+
+/* ===== トップバー ===== */
+.topbar{
+  background:#fff; border-bottom:1px solid var(--border);
+  position:sticky; top:0; z-index:100;
+  display:flex; align-items:center; gap:6px;
+  padding:0 14px; min-height:54px; overflow-x:auto;
+}
+.topbar-brand{
+  font-size:15px; font-weight:800; color:var(--indigo);
+  white-space:nowrap; margin-right:6px; letter-spacing:.02em;
+}
+.topbar-brand .sub{font-size:10px;color:var(--gold);font-weight:700;display:block;line-height:1.2;letter-spacing:.1em}
+.nav-link{
+  padding:6px 12px; border-radius:8px; font-size:13px; font-weight:600;
+  color:var(--ink-mid); white-space:nowrap; transition:.15s; cursor:pointer;
+}
+.nav-link:hover{background:var(--bg);color:var(--ink)}
+.nav-link.active{background:var(--indigo-light);color:var(--indigo)}
+.topbar-spacer{margin-left:auto}
+.topbar-user{font-size:12px;color:var(--ink-mid);white-space:nowrap;text-align:right}
+.topbar-user .role{font-size:10px;color:var(--gold);font-weight:700}
+.btn-logout{
+  padding:5px 12px;border:1px solid var(--border);border-radius:8px;
+  background:#fff;color:var(--ink-light);font-size:11px;cursor:pointer;
+  font-family:inherit;white-space:nowrap;
+}
+.btn-logout:hover{border-color:var(--ink-light);color:var(--ink-mid)}
+
+/* ===== レイアウト ===== */
+.wrap{max-width:920px;margin:0 auto;padding:20px 16px 60px}
+.page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.page-title{font-size:19px;font-weight:800;color:var(--ink)}
+.page-title .ico{color:var(--gold);margin-right:6px}
+
+/* ===== カード ===== */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 3px var(--shadow)}
+
+/* ===== ボタン ===== */
+.btn{
+  padding:9px 18px;border:none;border-radius:9px;font-size:14px;font-weight:700;
+  cursor:pointer;font-family:inherit;transition:.15s;
+}
+.btn-primary{background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:#fff}
+.btn-primary:hover{filter:brightness(1.05)}
+.btn-outline{background:#fff;border:1.5px solid var(--border);color:var(--ink-mid)}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold-dark)}
+.btn-danger{background:#fff;border:1.5px solid #E4C4C0;color:var(--red)}
+.btn-danger:hover{background:#FBF2F1}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:7px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ===== バッジ ===== */
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px}
+.badge-gold{background:#F6EEDD;color:var(--gold-dark)}
+.badge-indigo{background:var(--indigo-light);color:var(--indigo)}
+.badge-green{background:#E7F1EA;color:var(--green)}
+.badge-red{background:#F9EAE8;color:var(--red)}
+.badge-gray{background:#EFEDE8;color:var(--ink-light)}
+
+/* ===== フォーム ===== */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--ink-mid);margin-bottom:5px}
+.field input,.field select,.field textarea{
+  width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;
+  font-family:inherit;font-size:14px;color:var(--ink);background:#fff;outline:none;transition:.15s;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold)}
+.field textarea{resize:vertical;min-height:80px;line-height:1.7}
+.field .hint{font-size:11px;color:var(--ink-light);margin-top:4px}
+
+/* ===== モーダル ===== */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(58,52,43,.45);z-index:200;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
+.modal-ov.open{display:flex}
+.modal{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:520px;margin:auto}
+.modal-title{font-size:16px;font-weight:800;margin-bottom:18px;color:var(--ink)}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+
+/* ===== 汎用 ===== */
+.empty{text-align:center;padding:44px 20px;color:var(--ink-light);font-size:13px}
+.loading{text-align:center;padding:44px;color:var(--ink-light)}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;padding:11px 22px;border-radius:24px;font-size:13px;font-weight:600;opacity:0;transition:.25s;z-index:300;pointer-events:none;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}

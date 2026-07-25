@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>会員管理｜経営実践研究会</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+  th{background:#FAF8F4;color:var(--ink-mid);font-weight:700;font-size:12px}
+  .tbl-wrap{overflow-x:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="page-head">
+    <div class="page-title"><span class="ico">⚙️</span>会員管理</div>
+    <button class="btn btn-primary" id="inviteBtn">＋ 会員を招待</button>
+  </div>
+  <div class="card tbl-wrap">
+    <table>
+      <thead><tr><th>氏名</th><th>メール</th><th>会社名</th><th>権限</th><th>状態</th><th>操作</th></tr></thead>
+      <tbody id="tbody"><tr><td colspan="6" class="empty">読み込み中...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 招待モーダル -->
+<div class="modal-ov" id="inviteModal">
+  <div class="modal">
+    <div class="modal-title">会員を招待</div>
+    <div class="field"><label>メールアドレス <span style="color:var(--red)">*</span></label><input type="email" id="i-email"></div>
+    <div class="field"><label>お名前 <span style="color:var(--red)">*</span></label><input id="i-name"></div>
+    <div class="field"><label>初期パスワード <span style="color:var(--red)">*</span></label><input id="i-password" placeholder="8文字以上"><div class="hint">本人に伝えてください。ログイン後の変更を推奨します</div></div>
+    <div class="field"><label>権限</label>
+      <select id="i-role">
+        <option value="member">会員（出席・自分のプロフィール編集）</option>
+        <option value="editor">編集者（イベント編集・声かけ者設定）</option>
+        <option value="admin">管理者（全権限）</option>
+      </select>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" id="iCancel">キャンセル</button>
+      <button class="btn btn-primary" id="iSave">招待する</button>
+    </div>
+    <div id="iStatus" style="font-size:12px;margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- 編集モーダル -->
+<div class="modal-ov" id="editModal">
+  <div class="modal">
+    <div class="modal-title" id="eTitle">会員を編集</div>
+    <input type="hidden" id="e-uid">
+    <div class="field"><label>権限</label>
+      <select id="e-role">
+        <option value="member">会員</option>
+        <option value="editor">編集者</option>
+        <option value="admin">管理者</option>
+      </select>
+    </div>
+    <div class="field"><label>アカウント状態</label>
+      <select id="e-disabled"><option value="false">有効</option><option value="true">無効</option></select>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" id="eCancel">キャンセル</button>
+      <button class="btn btn-primary" id="eSave">保存する</button>
+    </div>
+    <div id="eStatus" style="font-size:12px;margin-top:10px"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { collection, getDocs, doc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+  import { createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+  import { initializeApp, deleteApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import { getAuth } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+  import { db, firebaseConfig } from './firebase-config.js';
+  import { requireAuth, renderTopbar, isAdmin, ROLE_LABELS } from './auth.js';
+
+  let me = null, users = [];
+  function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+  (async () => {
+    me = await requireAuth();
+    renderTopbar(me, 'admin');
+    if (!isAdmin(me)) {
+      document.querySelector('.wrap').innerHTML = '<div class="empty">このページは管理者のみ利用できます。</div>';
+      return;
+    }
+    await load();
+  })();
+
+  async function load() {
+    const tb = document.getElementById('tbody');
+    try {
+      const snap = await getDocs(collection(db, 'users'));
+      users = snap.docs.map(d => ({ uid: d.id, ...d.data() }))
+        .sort((a,b)=>(a.name||'').localeCompare(b.name||'','ja'));
+      if (!users.length) { tb.innerHTML = '<tr><td colspan="6" class="empty">会員がいません</td></tr>'; return; }
+      tb.innerHTML = users.map(u => {
+        const roleBadge = { admin:'badge-gold', editor:'badge-indigo', member:'badge-gray' }[u.role] || 'badge-gray';
+        const stBadge = u.disabled ? '<span class="badge badge-red">無効</span>' : '<span class="badge badge-green">有効</span>';
+        return `<tr>
+          <td style="font-weight:700">${esc(u.name || '－')}</td>
+          <td style="color:var(--ink-mid)">${esc(u.email || '')}</td>
+          <td>${esc(u.companyName || '－')}</td>
+          <td><span class="badge ${roleBadge}">${ROLE_LABELS[u.role] || u.role}</span></td>
+          <td>${stBadge}</td>
+          <td><button class="btn btn-outline btn-sm" data-edit="${u.uid}">編集</button></td>
+        </tr>`;
+      }).join('');
+      document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => openEdit(b.dataset.edit));
+    } catch (e) { tb.innerHTML = `<tr><td colspan="6" class="empty" style="color:var(--red)">エラー：${e.message}</td></tr>`; }
+  }
+
+  // ── 招待（二次Appでアカウント作成し、管理者のセッションを維持）──
+  const inviteModal = document.getElementById('inviteModal');
+  document.getElementById('inviteBtn').onclick = () => {
+    document.getElementById('i-email').value = '';
+    document.getElementById('i-name').value = '';
+    document.getElementById('i-password').value = '';
+    document.getElementById('i-role').value = 'member';
+    document.getElementById('iStatus').textContent = '';
+    inviteModal.classList.add('open');
+  };
+  document.getElementById('iCancel').onclick = () => inviteModal.classList.remove('open');
+  document.getElementById('iSave').onclick = async () => {
+    const email = document.getElementById('i-email').value.trim();
+    const name = document.getElementById('i-name').value.trim();
+    const pw = document.getElementById('i-password').value;
+    const role = document.getElementById('i-role').value;
+    const st = document.getElementById('iStatus');
+    if (!email || !name || !pw) { st.style.color='var(--red)'; st.textContent='必須項目を入力してください'; return; }
+    if (pw.length < 8) { st.style.color='var(--red)'; st.textContent='パスワードは8文字以上にしてください'; return; }
+    st.style.color = 'var(--ink-mid)'; st.textContent = '作成中...';
+    // 管理者のログインを維持したまま新アカウントを作るため二次Appを使う
+    const secondary = initializeApp(firebaseConfig, 'secondary_' + Date.now());
+    try {
+      const cred = await createUserWithEmailAndPassword(getAuth(secondary), email, pw);
+      const uid = cred.user.uid;
+      await setDoc(doc(db, 'users', uid), {
+        uid, email, name, role,
+        companyName: '', title: '', aspiration: '', businessContent: '',
+        introducerUid: null, inviterUid: null, photoURL: '',
+        disabled: false, createdAt: new Date().toISOString(),
+      });
+      st.style.color = 'var(--green)'; st.textContent = `✅ ${name}さんを登録しました`;
+      inviteModal.classList.remove('open');
+      await load();
+    } catch (e) {
+      const msg = { 'auth/email-already-in-use':'このメールアドレスは既に登録されています', 'auth/invalid-email':'メールアドレスの形式が正しくありません', 'auth/weak-password':'パスワードは6文字以上にしてください' }[e.code] || ('エラー：'+e.message);
+      st.style.color = 'var(--red)'; st.textContent = msg;
+    } finally {
+      await deleteApp(secondary);
+    }
+  };
+
+  // ── 編集 ──
+  const editModal = document.getElementById('editModal');
+  function openEdit(uid) {
+    const u = users.find(x => x.uid === uid); if (!u) return;
+    document.getElementById('e-uid').value = uid;
+    document.getElementById('eTitle').textContent = `${u.name || u.email} を編集`;
+    document.getElementById('e-role').value = u.role || 'member';
+    document.getElementById('e-disabled').value = u.disabled ? 'true' : 'false';
+    document.getElementById('eStatus').textContent = '';
+    editModal.classList.add('open');
+  }
+  document.getElementById('eCancel').onclick = () => editModal.classList.remove('open');
+  document.getElementById('eSave').onclick = async () => {
+    const uid = document.getElementById('e-uid').value;
+    const role = document.getElementById('e-role').value;
+    const disabled = document.getElementById('e-disabled').value === 'true';
+    const st = document.getElementById('eStatus');
+    if (uid === me.uid && (disabled || role !== 'admin')) { st.style.color='var(--red)'; st.textContent='自分自身の権限降格・無効化はできません'; return; }
+    st.style.color = 'var(--ink-mid)'; st.textContent = '保存中...';
+    try {
+      await setDoc(doc(db, 'users', uid), { role, disabled }, { merge: true });
+      editModal.classList.remove('open');
+      await load();
+      showToast('保存しました');
+    } catch (e) { st.style.color='var(--red)'; st.textContent = 'エラー：' + e.message; }
+  };
+
+  function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+</script>
+</body>
+</html>

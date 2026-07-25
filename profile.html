@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>プロフィール｜経営実践研究会</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .prof-head{padding:24px;margin-bottom:16px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+  .prof-avatar{width:80px;height:80px;border-radius:50%;background:var(--indigo-light);color:var(--indigo);display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;flex-shrink:0;overflow:hidden;position:relative}
+  .prof-avatar img{width:100%;height:100%;object-fit:cover}
+  .prof-name{font-size:22px;font-weight:800;color:var(--ink)}
+  .prof-company{font-size:14px;color:var(--ink-mid);margin-top:2px}
+  .prof-title{font-size:12px;color:var(--ink-light)}
+  .sec{padding:20px;margin-bottom:16px}
+  .sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .sec-title{font-size:14px;font-weight:800;color:var(--ink)}
+  .sec-title .ico{color:var(--gold);margin-right:5px}
+  .info-row{display:flex;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px}
+  .info-row:last-child{border-bottom:none}
+  .info-label{width:100px;flex-shrink:0;color:var(--ink-mid);font-weight:700;font-size:13px}
+  .info-val{flex:1;color:var(--ink);white-space:pre-wrap;line-height:1.8}
+  .info-val.empty-val{color:var(--ink-light)}
+  .prose{font-size:14px;line-height:1.9;white-space:pre-wrap;color:var(--ink)}
+  .prose.empty-val{color:var(--ink-light)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="members.html" class="nav-link" style="display:inline-block;margin-bottom:12px">← メンバー一覧に戻る</a>
+  <div id="content"><div class="loading">読み込み中...</div></div>
+</div>
+
+<!-- 基本情報編集モーダル -->
+<div class="modal-ov" id="editModal">
+  <div class="modal">
+    <div class="modal-title">プロフィール編集</div>
+    <div class="field"><label>お名前 <span style="color:var(--red)">*</span></label><input id="e-name"></div>
+    <div class="field"><label>会社名</label><input id="e-company"></div>
+    <div class="field"><label>役職</label><input id="e-title" placeholder="例：代表取締役"></div>
+    <div class="field"><label>志</label><textarea id="e-aspiration" placeholder="あなたの志を記入"></textarea></div>
+    <div class="field"><label>事業内容</label><textarea id="e-business" placeholder="事業内容を記入"></textarea></div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" id="editCancel">キャンセル</button>
+      <button class="btn btn-primary" id="editSave">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 紹介者・声かけ者編集モーダル -->
+<div class="modal-ov" id="relModal">
+  <div class="modal">
+    <div class="modal-title" id="relTitle">設定</div>
+    <input type="hidden" id="rel-field">
+    <div class="field"><label id="rel-label"></label>
+      <select id="rel-select"></select>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" id="relCancel">キャンセル</button>
+      <button class="btn btn-primary" id="relSave">保存する</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { doc, getDoc, updateDoc, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+  import { ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
+  import { db, storage } from './firebase-config.js';
+  import { requireAuth, renderTopbar, canEdit, canEditProfile } from './auth.js';
+
+  const targetUid = new URLSearchParams(location.search).get('uid');
+  let me = null, user = null, members = [], memberMap = {};
+  function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+  (async () => {
+    me = await requireAuth();
+    renderTopbar(me, null);
+    if (!targetUid) { location.href = 'members.html'; return; }
+    await load();
+  })();
+
+  async function load() {
+    try {
+      const [uSnap, memSnap] = await Promise.all([
+        getDoc(doc(db, 'users', targetUid)),
+        getDocs(collection(db, 'users')),
+      ]);
+      if (!uSnap.exists()) { document.getElementById('content').innerHTML = '<div class="empty">メンバーが見つかりません</div>'; return; }
+      user = { uid: uSnap.id, ...uSnap.data() };
+      members = memSnap.docs.map(d => ({ uid: d.id, ...d.data() })).filter(m => !m.disabled);
+      memberMap = {}; members.forEach(m => memberMap[m.uid] = m);
+      render();
+    } catch (e) {
+      document.getElementById('content').innerHTML = `<div class="empty" style="color:var(--red)">読み込みエラー：${e.message}</div>`;
+    }
+  }
+
+  function render() {
+    const editableSelf = canEditProfile(me, targetUid); // 本人 or admin
+    const editableRel  = canEdit(me);                    // editor 以上（声かけ者）
+    const initial = (user.name || '?').charAt(0);
+    const avatar = user.photoURL ? `<img src="${user.photoURL}" alt="">` : esc(initial);
+    const introducer = user.introducerUid ? memberMap[user.introducerUid]?.name : null;
+    const inviter    = user.inviterUid ? memberMap[user.inviterUid]?.name : null;
+
+    document.getElementById('content').innerHTML = `
+      <div class="card prof-head">
+        <div class="prof-avatar">${avatar}
+          ${editableSelf ? '<label style="position:absolute;bottom:0;right:0;background:var(--gold);color:#fff;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px">📷<input type="file" id="photoInput" accept="image/*" style="display:none"></label>' : ''}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div class="prof-name">${esc(user.name || '（未設定）')}</div>
+          <div class="prof-company">${esc(user.companyName || '')}</div>
+          <div class="prof-title">${esc(user.title || '')}</div>
+        </div>
+        ${editableSelf ? '<button class="btn btn-outline btn-sm" id="editBtn">基本情報を編集</button>' : ''}
+      </div>
+
+      <div class="card sec">
+        <div class="sec-title"><span class="ico">🔥</span>志</div>
+        <div class="prose ${user.aspiration?'':'empty-val'}">${user.aspiration ? esc(user.aspiration) : '未登録'}</div>
+      </div>
+
+      <div class="card sec">
+        <div class="sec-title"><span class="ico">🏢</span>事業内容</div>
+        <div class="prose ${user.businessContent?'':'empty-val'}">${user.businessContent ? esc(user.businessContent) : '未登録'}</div>
+      </div>
+
+      <div class="card sec">
+        <div class="sec-title"><span class="ico">🤝</span>ご縁</div>
+        <div class="info-row">
+          <div class="info-label">紹介者</div>
+          <div class="info-val ${introducer?'':'empty-val'}">${introducer ? esc(introducer) : '未設定'}</div>
+          ${editableSelf ? '<button class="btn btn-outline btn-sm" id="editIntroducer">変更</button>' : ''}
+        </div>
+        <div class="info-row">
+          <div class="info-label">声かけ者</div>
+          <div class="info-val ${inviter?'':'empty-val'}">${inviter ? esc(inviter) : '未設定'}</div>
+          ${editableRel ? '<button class="btn btn-outline btn-sm" id="editInviter">変更</button>' : ''}
+        </div>
+        ${editableRel ? '' : '<div class="hint" style="font-size:11px;color:var(--ink-light);margin-top:6px">※ 声かけ者は編集権限を持つ方のみ設定できます</div>'}
+      </div>
+    `;
+
+    if (editableSelf) {
+      document.getElementById('editBtn').onclick = openEditModal;
+      document.getElementById('editIntroducer').onclick = () => openRelModal('introducerUid', '紹介者', true);
+      const pi = document.getElementById('photoInput');
+      if (pi) pi.onchange = uploadPhoto;
+    }
+    if (editableRel) {
+      document.getElementById('editInviter').onclick = () => openRelModal('inviterUid', '声かけ者', false);
+    }
+  }
+
+  // ── 基本情報編集 ──
+  const editModal = document.getElementById('editModal');
+  function openEditModal() {
+    document.getElementById('e-name').value = user.name || '';
+    document.getElementById('e-company').value = user.companyName || '';
+    document.getElementById('e-title').value = user.title || '';
+    document.getElementById('e-aspiration').value = user.aspiration || '';
+    document.getElementById('e-business').value = user.businessContent || '';
+    editModal.classList.add('open');
+  }
+  document.getElementById('editCancel').onclick = () => editModal.classList.remove('open');
+  document.getElementById('editSave').onclick = async () => {
+    const name = document.getElementById('e-name').value.trim();
+    if (!name) { showToast('お名前は必須です'); return; }
+    try {
+      const upd = {
+        name,
+        companyName: document.getElementById('e-company').value.trim(),
+        title: document.getElementById('e-title').value.trim(),
+        aspiration: document.getElementById('e-aspiration').value.trim(),
+        businessContent: document.getElementById('e-business').value.trim(),
+      };
+      await updateDoc(doc(db, 'users', targetUid), upd);
+      Object.assign(user, upd);
+      editModal.classList.remove('open'); render();
+      showToast('保存しました');
+    } catch (e) { showToast('エラー：' + e.message); }
+  };
+
+  // ── 紹介者・声かけ者 ──
+  const relModal = document.getElementById('relModal');
+  function openRelModal(field, label) {
+    document.getElementById('rel-field').value = field;
+    document.getElementById('relTitle').textContent = label + 'の設定';
+    document.getElementById('rel-label').textContent = label + 'をメンバーから選択';
+    const cur = user[field] || '';
+    const opts = ['<option value="">（未設定）</option>'].concat(
+      members.filter(m => m.uid !== targetUid).sort((a,b)=>(a.name||'').localeCompare(b.name||'','ja'))
+        .map(m => `<option value="${m.uid}">${esc(m.name)}${m.companyName?'（'+esc(m.companyName)+'）':''}</option>`));
+    const sel = document.getElementById('rel-select');
+    sel.innerHTML = opts.join(''); sel.value = cur;
+    relModal.classList.add('open');
+  }
+  document.getElementById('relCancel').onclick = () => relModal.classList.remove('open');
+  document.getElementById('relSave').onclick = async () => {
+    const field = document.getElementById('rel-field').value;
+    const val = document.getElementById('rel-select').value || null;
+    try {
+      await updateDoc(doc(db, 'users', targetUid), { [field]: val });
+      user[field] = val;
+      relModal.classList.remove('open'); render();
+      showToast('保存しました');
+    } catch (e) { showToast('エラー：' + e.message); }
+  };
+
+  // ── 顔写真アップロード ──
+  async function uploadPhoto(e) {
+    const file = e.target.files[0]; if (!file) return;
+    try {
+      showToast('アップロード中...');
+      const path = `users/${targetUid}/photo_${Date.now()}_${file.name}`;
+      const sref = ref(storage, path);
+      await uploadBytes(sref, file);
+      const url = await getDownloadURL(sref);
+      await updateDoc(doc(db, 'users', targetUid), { photoURL: url });
+      user.photoURL = url; render();
+      showToast('写真を更新しました');
+    } catch (err) { showToast('アップロード失敗：' + err.message); }
+  }
+
+  function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+</script>
+</body>
+</html>

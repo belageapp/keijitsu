@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>メンバー｜経営実践研究会</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .search-box{margin-bottom:16px}
+  .search-box input{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;outline:none}
+  .search-box input:focus{border-color:var(--gold)}
+  .member-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+  .member-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;transition:.15s;box-shadow:0 1px 3px var(--shadow)}
+  .member-card:hover{border-color:var(--gold);transform:translateY(-2px)}
+  .mc-head{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+  .mc-avatar{width:48px;height:48px;border-radius:50%;background:var(--indigo-light);color:var(--indigo);display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800;flex-shrink:0;overflow:hidden}
+  .mc-avatar img{width:100%;height:100%;object-fit:cover}
+  .mc-name{font-size:15px;font-weight:800;color:var(--ink)}
+  .mc-company{font-size:12px;color:var(--ink-mid)}
+  .mc-aspiration{font-size:12px;color:var(--ink-mid);line-height:1.6;border-top:1px solid var(--border);padding-top:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="page-head">
+    <div class="page-title"><span class="ico">👥</span>メンバー</div>
+    <span class="badge badge-gray" id="count"></span>
+  </div>
+  <div class="search-box"><input id="search" placeholder="🔍 氏名・会社名・事業内容で検索"></div>
+  <div id="grid"><div class="loading">読み込み中...</div></div>
+</div>
+
+<script type="module">
+  import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+  import { db } from './firebase-config.js';
+  import { requireAuth, renderTopbar } from './auth.js';
+
+  let me = null, members = [];
+  function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+  (async () => {
+    me = await requireAuth();
+    renderTopbar(me, 'members');
+    await load();
+  })();
+
+  async function load() {
+    try {
+      const snap = await getDocs(collection(db, 'users'));
+      members = snap.docs.map(d => ({ uid: d.id, ...d.data() }))
+        .filter(m => !m.disabled)
+        .sort((a,b) => (a.name||'').localeCompare(b.name||'', 'ja'));
+      document.getElementById('count').textContent = `${members.length}名`;
+      render(members);
+    } catch (e) {
+      document.getElementById('grid').innerHTML = `<div class="empty" style="color:var(--red)">読み込みエラー：${e.message}</div>`;
+    }
+  }
+
+  function render(list) {
+    const el = document.getElementById('grid');
+    if (!list.length) { el.innerHTML = '<div class="empty">該当するメンバーがいません</div>'; return; }
+    el.innerHTML = `<div class="member-grid">${list.map(m => {
+      const initial = (m.name || '?').charAt(0);
+      const avatar = m.photoURL ? `<img src="${m.photoURL}" alt="">` : esc(initial);
+      return `<div class="member-card" onclick="location.href='profile.html?uid=${m.uid}'">
+        <div class="mc-head">
+          <div class="mc-avatar">${avatar}</div>
+          <div style="min-width:0">
+            <div class="mc-name">${esc(m.name || '（未設定）')}</div>
+            <div class="mc-company">${esc(m.companyName || '')}</div>
+          </div>
+        </div>
+        ${m.aspiration ? `<div class="mc-aspiration">志：${esc(m.aspiration)}</div>` : ''}
+      </div>`;
+    }).join('')}</div>`;
+  }
+
+  document.getElementById('search').oninput = (e) => {
+    const kw = e.target.value.toLowerCase().trim();
+    if (!kw) { render(members); return; }
+    render(members.filter(m =>
+      [m.name, m.companyName, m.businessContent, m.aspiration].some(s => s && s.toLowerCase().includes(kw))
+    ));
+  };
+</script>
+</body>
+</html>
