@@ -9,7 +9,7 @@
 <style>
   table{width:100%;border-collapse:collapse;font-size:13px}
   th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
-  th{background:#FAF8F4;color:var(--ink-mid);font-weight:700;font-size:12px}
+  th{background:#F1F8FD;color:var(--ink-mid);font-weight:700;font-size:12px}
   .tbl-wrap{overflow-x:auto}
 </style>
 </head>
@@ -121,7 +121,7 @@
         const action = isPending
           ? `<button class="btn btn-primary btn-sm" data-approve="${u.uid}">承認</button>`
           : `<button class="btn btn-outline btn-sm" data-edit="${u.uid}">編集</button>`;
-        return `<tr${isPending?' style="background:#FBF3F1"':''}>
+        return `<tr${isPending?' style="background:#FDF1EC"':''}>
           <td style="font-weight:700">${esc(u.name || '－')}</td>
           <td style="color:var(--ink-mid)">${esc(u.email || '')}</td>
           <td>${esc(u.companyName || '－')}</td>
