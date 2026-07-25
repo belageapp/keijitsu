@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>新規登録｜経営実践研究会</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  body{display:flex;align-items:center;justify-content:center;padding:20px}
+  .box{background:#fff;border:1px solid var(--border);border-radius:18px;padding:38px 32px;max-width:420px;width:100%;box-shadow:0 6px 30px var(--shadow)}
+  .brand{text-align:center;font-size:20px;font-weight:800;color:var(--indigo);letter-spacing:.03em}
+  .brand .en{display:block;font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.22em;margin-top:4px}
+  .box h1{text-align:center;font-size:15px;color:var(--ink);margin:14px 0 4px}
+  .box .lead{text-align:center;font-size:12px;color:var(--ink-light);margin-bottom:24px;line-height:1.7}
+  .msg{font-size:13px;margin-top:14px;min-height:18px;line-height:1.7}
+  .done-box{text-align:center;padding:10px 0}
+  .done-box .ico{font-size:40px;margin-bottom:12px}
+  .foot{text-align:center;font-size:12px;color:var(--ink-light);margin-top:20px}
+  .foot a{color:var(--gold-dark);font-weight:600}
+</style>
+</head>
+<body>
+<div class="box" id="box">
+  <div class="brand">経営実践研究会<span class="en">KEIJITSU</span></div>
+  <h1>新規会員登録</h1>
+  <div class="lead">登録後、確認メールが届きます。<br>メール認証と事務局の承認が完了するとご利用いただけます。</div>
+
+  <div class="field"><label>お名前 <span style="color:var(--red)">*</span></label><input id="name" placeholder="山田 太郎"></div>
+  <div class="field"><label>メールアドレス <span style="color:var(--red)">*</span></label><input type="email" id="email" placeholder="you@example.com" autocomplete="email"></div>
+  <div class="field"><label>パスワード <span style="color:var(--red)">*</span></label><input type="password" id="password" placeholder="8文字以上" autocomplete="new-password"><div class="hint">8文字以上で設定してください</div></div>
+  <button class="btn btn-primary" id="regBtn" style="width:100%;margin-top:6px">登録する</button>
+  <div class="msg" id="msg"></div>
+  <div class="foot">すでにアカウントをお持ちの方は <a href="login.html">ログイン</a></div>
+</div>
+
+<script type="module">
+  import { createUserWithEmailAndPassword, sendEmailVerification, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+  import { doc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+  import { auth, db } from './firebase-config.js';
+
+  const msg = document.getElementById('msg');
+  document.getElementById('regBtn').onclick = doRegister;
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') doRegister(); });
+
+  async function doRegister() {
+    const name = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const pw = document.getElementById('password').value;
+    msg.style.color = 'var(--red)';
+    if (!name || !email || !pw) { msg.textContent = 'すべての項目を入力してください'; return; }
+    if (pw.length < 8) { msg.textContent = 'パスワードは8文字以上にしてください'; return; }
+
+    const btn = document.getElementById('regBtn');
+    btn.disabled = true; btn.textContent = '登録中...';
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, pw);
+      const uid = cred.user.uid;
+      // 会員ドキュメントを作成（承認待ち・一般権限固定）
+      await setDoc(doc(db, 'users', uid), {
+        uid, email, name,
+        role: 'member', status: 'pending',
+        companyName: '', title: '', aspiration: '', businessContent: '',
+        introducerUid: null, inviterUid: null, photoURL: '',
+        disabled: false, selfRegistered: true,
+        createdAt: new Date().toISOString(),
+      });
+      // 確認メール送信
+      await sendEmailVerification(cred.user);
+      // いったんサインアウト（認証・承認後にログインしてもらう）
+      await signOut(auth);
+      showDone(email);
+    } catch (e) {
+      const m = {
+        'auth/email-already-in-use': 'このメールアドレスは既に登録されています。ログイン画面をご利用ください。',
+        'auth/invalid-email': 'メールアドレスの形式が正しくありません',
+        'auth/weak-password': 'パスワードは6文字以上にしてください',
+      }[e.code] || ('登録に失敗しました：' + e.message);
+      msg.textContent = m;
+      btn.disabled = false; btn.textContent = '登録する';
+    }
+  }
+
+  function showDone(email) {
+    document.getElementById('box').innerHTML = `
+      <div class="brand">経営実践研究会<span class="en">KEIJITSU</span></div>
+      <div class="done-box">
+        <div class="ico">📧</div>
+        <div style="font-size:16px;font-weight:800;color:var(--ink);margin-bottom:10px">確認メールを送信しました</div>
+        <div style="font-size:13px;color:var(--ink-mid);line-height:1.9">
+          <strong>${email}</strong> 宛に確認メールをお送りしました。<br>
+          メール内のリンクをクリックして認証を完了してください。<br><br>
+          その後、<strong>事務局の承認</strong>が完了しましたらログインいただけます。
+        </div>
+        <div style="font-size:11px;color:var(--ink-light);margin-top:18px">メールが届かない場合は迷惑メールフォルダをご確認ください。</div>
+        <a href="login.html" class="btn btn-outline" style="display:inline-block;margin-top:20px;text-decoration:none">ログイン画面へ</a>
+      </div>`;
+  }
+</script>
+</body>
+</html>

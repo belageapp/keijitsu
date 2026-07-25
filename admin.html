@@ -16,7 +16,7 @@
 <body>
 <div class="wrap">
   <div class="page-head">
-    <div class="page-title"><span class="ico">⚙️</span>会員管理</div>
+    <div class="page-title"><span class="ico">⚙️</span>会員管理 <span id="pendingNote"></span></div>
     <button class="btn btn-primary" id="inviteBtn">＋ 会員を招待</button>
   </div>
   <div class="card tbl-wrap">
@@ -99,22 +99,39 @@
     const tb = document.getElementById('tbody');
     try {
       const snap = await getDocs(collection(db, 'users'));
-      users = snap.docs.map(d => ({ uid: d.id, ...d.data() }))
-        .sort((a,b)=>(a.name||'').localeCompare(b.name||'','ja'));
+      users = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+      // 承認待ちを先頭に、その後は氏名順
+      users.sort((a,b)=>{
+        const pa = a.status==='pending'?0:1, pb = b.status==='pending'?0:1;
+        if (pa!==pb) return pa-pb;
+        return (a.name||'').localeCompare(b.name||'','ja');
+      });
       if (!users.length) { tb.innerHTML = '<tr><td colspan="6" class="empty">会員がいません</td></tr>'; return; }
+
+      const pendingCount = users.filter(u=>u.status==='pending').length;
+      document.getElementById('pendingNote').innerHTML = pendingCount
+        ? `<span class="badge badge-red">承認待ち ${pendingCount}名</span>` : '';
+
       tb.innerHTML = users.map(u => {
         const roleBadge = { admin:'badge-gold', editor:'badge-indigo', member:'badge-gray' }[u.role] || 'badge-gray';
-        const stBadge = u.disabled ? '<span class="badge badge-red">無効</span>' : '<span class="badge badge-green">有効</span>';
-        return `<tr>
+        const isPending = u.status === 'pending';
+        const stBadge = isPending ? '<span class="badge badge-red">承認待ち</span>'
+          : u.disabled ? '<span class="badge badge-gray">無効</span>'
+          : '<span class="badge badge-green">有効</span>';
+        const action = isPending
+          ? `<button class="btn btn-primary btn-sm" data-approve="${u.uid}">承認</button>`
+          : `<button class="btn btn-outline btn-sm" data-edit="${u.uid}">編集</button>`;
+        return `<tr${isPending?' style="background:#FBF3F1"':''}>
           <td style="font-weight:700">${esc(u.name || '－')}</td>
           <td style="color:var(--ink-mid)">${esc(u.email || '')}</td>
           <td>${esc(u.companyName || '－')}</td>
           <td><span class="badge ${roleBadge}">${ROLE_LABELS[u.role] || u.role}</span></td>
           <td>${stBadge}</td>
-          <td><button class="btn btn-outline btn-sm" data-edit="${u.uid}">編集</button></td>
+          <td>${action}</td>
         </tr>`;
       }).join('');
       document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => openEdit(b.dataset.edit));
+      document.querySelectorAll('[data-approve]').forEach(b => b.onclick = () => approve(b.dataset.approve));
     } catch (e) { tb.innerHTML = `<tr><td colspan="6" class="empty" style="color:var(--red)">エラー：${e.message}</td></tr>`; }
   }
 
@@ -145,6 +162,7 @@
       const uid = cred.user.uid;
       await setDoc(doc(db, 'users', uid), {
         uid, email, name, role,
+        status: 'active',  // 管理者招待は即利用可
         companyName: '', title: '', aspiration: '', businessContent: '',
         introducerUid: null, inviterUid: null, photoURL: '',
         disabled: false, createdAt: new Date().toISOString(),
@@ -159,6 +177,17 @@
       await deleteApp(secondary);
     }
   };
+
+  // ── 承認（承認待ち → 有効）──
+  async function approve(uid) {
+    const u = users.find(x => x.uid === uid); if (!u) return;
+    if (!confirm(`${u.name || u.email} さんを承認しますか？\n承認するとログイン・利用ができるようになります。`)) return;
+    try {
+      await setDoc(doc(db, 'users', uid), { status: 'active' }, { merge: true });
+      await load();
+      showToast('承認しました');
+    } catch (e) { showToast('エラー：' + e.message); }
+  }
 
   // ── 編集 ──
   const editModal = document.getElementById('editModal');
