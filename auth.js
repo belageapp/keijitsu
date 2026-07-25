@@ -83,7 +83,7 @@ export function renderTopbar(userData, active) {
   const bar = document.createElement('div');
   bar.className = 'topbar';
   bar.innerHTML = `
-    <a href="index.html" class="topbar-brand">経営実践研究会<span class="sub">KEIJITSU</span></a>
+    <a href="index.html" class="topbar-brand">経営実践研究会 広島<span class="sub">会員 情報共有アプリ</span></a>
     ${nav}
     <div class="topbar-spacer"></div>
     <div class="topbar-user">
