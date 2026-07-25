@@ -26,7 +26,18 @@
   <h1>新規会員登録</h1>
   <div class="lead">登録後、確認メールが届きます。<br>メール認証と事務局の承認が完了するとご利用いただけます。</div>
 
-  <div class="field"><label>お名前 <span style="color:var(--red)">*</span></label><input id="name" placeholder="山田 太郎"></div>
+  <div class="field"><label>お名前（漢字） <span style="color:var(--red)">*</span></label>
+    <div style="display:flex;gap:8px">
+      <input id="sei" placeholder="姓（山田）" autocomplete="family-name">
+      <input id="mei" placeholder="名（太郎）" autocomplete="given-name">
+    </div>
+  </div>
+  <div class="field"><label>ふりがな <span style="color:var(--red)">*</span></label>
+    <div style="display:flex;gap:8px">
+      <input id="sei-kana" placeholder="せい（やまだ）">
+      <input id="mei-kana" placeholder="めい（たろう）">
+    </div>
+  </div>
   <div class="field"><label>メールアドレス <span style="color:var(--red)">*</span></label><input type="email" id="email" placeholder="you@example.com" autocomplete="email"></div>
   <div class="field"><label>パスワード <span style="color:var(--red)">*</span></label><input type="password" id="password" placeholder="8文字以上" autocomplete="new-password"><div class="hint">8文字以上で設定してください</div></div>
   <button class="btn btn-primary" id="regBtn" style="width:100%;margin-top:6px">登録する</button>
@@ -44,13 +55,18 @@
   document.addEventListener('keydown', e => { if (e.key === 'Enter') doRegister(); });
 
   async function doRegister() {
-    const name = document.getElementById('name').value.trim();
+    const sei = document.getElementById('sei').value.trim();
+    const mei = document.getElementById('mei').value.trim();
+    const seiKana = document.getElementById('sei-kana').value.trim();
+    const meiKana = document.getElementById('mei-kana').value.trim();
     const email = document.getElementById('email').value.trim();
     const pw = document.getElementById('password').value;
     msg.style.color = 'var(--red)';
-    if (!name || !email || !pw) { msg.textContent = 'すべての項目を入力してください'; return; }
+    if (!sei || !mei || !seiKana || !meiKana || !email || !pw) { msg.textContent = 'すべての項目を入力してください'; return; }
     if (pw.length < 8) { msg.textContent = 'パスワードは8文字以上にしてください'; return; }
 
+    const name = `${sei} ${mei}`;
+    const nameKana = `${seiKana} ${meiKana}`;
     const btn = document.getElementById('regBtn');
     btn.disabled = true; btn.textContent = '登録中...';
     try {
@@ -58,7 +74,7 @@
       const uid = cred.user.uid;
       // 会員ドキュメントを作成（承認待ち・一般権限固定）
       await setDoc(doc(db, 'users', uid), {
-        uid, email, name,
+        uid, email, name, nameKana, sei, mei, seiKana, meiKana,
         role: 'member', status: 'pending',
         companyName: '', title: '', aspiration: '', businessContent: '',
         introducerUid: null, inviterUid: null, photoURL: '',
