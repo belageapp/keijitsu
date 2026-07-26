@@ -15,8 +15,8 @@ service cloud.firestore {
     function isActive() {
       return isAuth()
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        && userData().disabled != true
-        && userData().status != 'pending';   // 承認待ちは不可
+        && userData().get('disabled', false) != true
+        && userData().get('status', 'active') != 'pending';   // 承認待ちは不可（statusなし=active扱い）
     }
     function role() {
       return userData().role;

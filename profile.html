@@ -36,7 +36,18 @@
 <div class="modal-ov" id="editModal">
   <div class="modal">
     <div class="modal-title">プロフィール編集</div>
-    <div class="field"><label>お名前 <span style="color:var(--red)">*</span></label><input id="e-name"></div>
+    <div class="field"><label>お名前（漢字） <span style="color:var(--red)">*</span></label>
+      <div style="display:flex;gap:8px">
+        <input id="e-sei" placeholder="姓（山田）">
+        <input id="e-mei" placeholder="名（太郎）">
+      </div>
+    </div>
+    <div class="field"><label>ふりがな <span style="color:var(--red)">*</span></label>
+      <div style="display:flex;gap:8px">
+        <input id="e-sei-kana" placeholder="せい（やまだ）">
+        <input id="e-mei-kana" placeholder="めい（たろう）">
+      </div>
+    </div>
     <div class="field"><label>会社名</label><input id="e-company"></div>
     <div class="field"><label>役職</label><input id="e-title" placeholder="例：代表取締役"></div>
     <div class="field"><label>志</label><textarea id="e-aspiration" placeholder="あなたの志を記入"></textarea></div>
@@ -112,6 +123,7 @@
           ${editableSelf ? '<label style="position:absolute;bottom:0;right:0;background:var(--gold);color:#fff;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px">📷<input type="file" id="photoInput" accept="image/*" style="display:none"></label>' : ''}
         </div>
         <div style="flex:1;min-width:0">
+          ${user.nameKana ? `<div style="font-size:11px;color:var(--ink-light)">${esc(user.nameKana)}</div>` : ''}
           <div class="prof-name">${esc(user.name || '（未設定）')}</div>
           <div class="prof-company">${esc(user.companyName || '')}</div>
           <div class="prof-title">${esc(user.title || '')}</div>
@@ -159,7 +171,13 @@
   // ── 基本情報編集 ──
   const editModal = document.getElementById('editModal');
   function openEditModal() {
-    document.getElementById('e-name').value = user.name || '';
+    // 既存データ：sei/mei が無ければ name をスペースで分割して補完
+    const nameParts = (user.name || '').split(/[\s　]+/);
+    const kanaParts = (user.nameKana || '').split(/[\s　]+/);
+    document.getElementById('e-sei').value = user.sei || nameParts[0] || '';
+    document.getElementById('e-mei').value = user.mei || nameParts[1] || '';
+    document.getElementById('e-sei-kana').value = user.seiKana || kanaParts[0] || '';
+    document.getElementById('e-mei-kana').value = user.meiKana || kanaParts[1] || '';
     document.getElementById('e-company').value = user.companyName || '';
     document.getElementById('e-title').value = user.title || '';
     document.getElementById('e-aspiration').value = user.aspiration || '';
@@ -168,11 +186,16 @@
   }
   document.getElementById('editCancel').onclick = () => editModal.classList.remove('open');
   document.getElementById('editSave').onclick = async () => {
-    const name = document.getElementById('e-name').value.trim();
-    if (!name) { showToast('お名前は必須です'); return; }
+    const sei = document.getElementById('e-sei').value.trim();
+    const mei = document.getElementById('e-mei').value.trim();
+    const seiKana = document.getElementById('e-sei-kana').value.trim();
+    const meiKana = document.getElementById('e-mei-kana').value.trim();
+    if (!sei || !mei || !seiKana || !meiKana) { showToast('お名前とふりがなは必須です'); return; }
     try {
       const upd = {
-        name,
+        sei, mei, seiKana, meiKana,
+        name: `${sei} ${mei}`,
+        nameKana: `${seiKana} ${meiKana}`,
         companyName: document.getElementById('e-company').value.trim(),
         title: document.getElementById('e-title').value.trim(),
         aspiration: document.getElementById('e-aspiration').value.trim(),
@@ -214,16 +237,22 @@
   // ── 顔写真アップロード ──
   async function uploadPhoto(e) {
     const file = e.target.files[0]; if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { showToast('画像が大きすぎます（10MBまで）'); return; }
     try {
       showToast('アップロード中...');
-      const path = `users/${targetUid}/photo_${Date.now()}_${file.name}`;
+      // ファイル名は拡張子のみ使い、日本語や記号を含む元名は使わない
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const path = `users/${targetUid}/photo_${Date.now()}.${ext}`;
       const sref = ref(storage, path);
-      await uploadBytes(sref, file);
+      await uploadBytes(sref, file, { contentType: file.type || 'image/jpeg' });
       const url = await getDownloadURL(sref);
       await updateDoc(doc(db, 'users', targetUid), { photoURL: url });
       user.photoURL = url; render();
       showToast('写真を更新しました');
-    } catch (err) { showToast('アップロード失敗：' + err.message); }
+    } catch (err) {
+      console.error('photo upload error', err);
+      showToast('アップロード失敗：' + (err.code || err.message));
+    }
   }
 
   function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
