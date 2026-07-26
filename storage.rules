@@ -6,10 +6,13 @@ service firebase.storage {
       return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
     }
     function isActive() {
-      return request.auth != null && userData().disabled != true;
+      return request.auth != null
+        && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+        && userData().get('disabled', false) != true
+        && userData().get('status', 'active') != 'pending';
     }
     function isEditor() {
-      return isActive() && (userData().role == 'editor' || userData().role == 'admin');
+      return isActive() && (userData().get('role','member') == 'editor' || userData().get('role','member') == 'admin');
     }
 
     // イベントの添付（チラシ・資料）：閲覧は会員、書き込みは editor 以上
