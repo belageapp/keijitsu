@@ -45,7 +45,7 @@
 </head>
 <body>
 <div class="wrap">
-  <a href="members.html" class="nav-link" style="display:inline-block;margin-bottom:12px">← メンバー一覧に戻る</a>
+  <a href="members.html" class="nav-link" style="display:inline-block;margin-bottom:12px">← 会員一覧に戻る</a>
   <div id="content"><div class="loading">読み込み中...</div></div>
 </div>
 
@@ -172,7 +172,7 @@
         getDoc(doc(db, 'users', targetUid)),
         getDocs(collection(db, 'users')),
       ]);
-      if (!uSnap.exists()) { document.getElementById('content').innerHTML = '<div class="empty">メンバーが見つかりません</div>'; return; }
+      if (!uSnap.exists()) { document.getElementById('content').innerHTML = '<div class="empty">会員が見つかりません</div>'; return; }
       user = { uid: uSnap.id, ...uSnap.data() };
       members = memSnap.docs.map(d => ({ uid: d.id, ...d.data() })).filter(m => !m.disabled);
       memberMap = {}; members.forEach(m => memberMap[m.uid] = m);
@@ -349,7 +349,7 @@
   function openRelModal(field, label) {
     document.getElementById('rel-field').value = field;
     document.getElementById('relTitle').textContent = label + 'の設定';
-    document.getElementById('rel-label').textContent = label + 'をメンバーから選択';
+    document.getElementById('rel-label').textContent = label + 'を会員から選択';
     const cur = user[field] || '';
     const opts = ['<option value="">（未設定）</option>'].concat(
       members.filter(m => m.uid !== targetUid).sort((a,b)=>(a.name||'').localeCompare(b.name||'','ja'))

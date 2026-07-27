@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex">
-<title>メンバー｜経営実践研究会 広島会員 情報共有アプリ</title>
+<title>会員｜経営実践研究会 広島会員 情報共有アプリ</title>
 <link rel="stylesheet" href="style.css">
 <style>
   .search-box{margin-bottom:16px}
@@ -24,7 +24,7 @@
 <body>
 <div class="wrap">
   <div class="page-head">
-    <div class="page-title"><span class="ico">👥</span>メンバー</div>
+    <div class="page-title"><span class="ico">👥</span>会員</div>
     <span class="badge badge-gray" id="count"></span>
   </div>
   <div class="search-box"><input id="search" placeholder="🔍 氏名・会社名・業種・事業内容・志で検索"></div>
@@ -99,7 +99,7 @@
 
   function render(list) {
     const el = document.getElementById('grid');
-    if (!list.length) { el.innerHTML = '<div class="empty">該当するメンバーがいません</div>'; return; }
+    if (!list.length) { el.innerHTML = '<div class="empty">該当する会員がいません</div>'; return; }
     el.innerHTML = `<div class="member-grid">${list.map(m => {
       const initial = (m.name || '?').charAt(0);
       const avatar = m.photoURL ? `<img src="${m.photoURL}" alt="">` : esc(initial);

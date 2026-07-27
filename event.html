@@ -94,6 +94,10 @@
     <div class="field"><label>内容・概要</label><textarea id="ee-desc"></textarea></div>
     <div class="field"><label>役割分担表（GoogleスプレッドシートURL）</label><input id="ee-sheet" placeholder="https://docs.google.com/spreadsheets/..."><div class="hint">「リンクを知っている全員が閲覧可」または「ウェブに公開」で埋め込み表示されます。特定のタブを表示したい場合は、そのタブを開いた状態のURL（末尾 #gid=…）を貼り付けてください。</div></div>
     <div class="field"><label>K-PORTAL 決済URL（本部決済サイト）</label><input id="ee-kportal" placeholder="https://..."><div class="hint">イベントごとの本部決済ページのURL。出欠タブに決済ボタンとして表示されます。</div></div>
+    <div class="field" style="display:flex;gap:10px">
+      <div style="flex:1"><label>本会 会員目標（人）</label><input type="number" id="ee-goal-mem" min="0"></div>
+      <div style="flex:1"><label>本会 ゲスト目標（人）</label><input type="number" id="ee-goal-guest" min="0"></div>
+    </div>
     <div class="modal-btns">
       <button class="btn btn-outline" id="eeCancel">キャンセル</button>
       <button class="btn btn-primary" id="eeSave">保存する</button>
@@ -141,7 +145,7 @@
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
   import { db, storage } from './firebase-config.js';
   import { requireAuth, renderTopbar, canEdit } from './auth.js';
-  import { EVENT_TYPES, eventTypeBadge, INDUSTRIES, industryBadge, HIROSHIMA_MEMBER_COUNT, mobilizationGoal, OTHER_CATEGORIES } from './constants.js';
+  import { EVENT_TYPES, eventTypeBadge, INDUSTRIES, industryBadge, OTHER_CATEGORIES } from './constants.js';
 
   // 種別セレクトを構築
   document.getElementById('ee-type').innerHTML =
@@ -245,31 +249,34 @@
   }
 
   function summaryPanelHtml(sm) {
-    const goal = mobilizationGoal(HIROSHIMA_MEMBER_COUNT);
-    const mem = sm.main.members;
-    const pct = goal > 0 ? Math.round(mem / goal * 100) : 0;
+    const goalMem = ev.goalMainMembers || 0;
+    const goalGuest = ev.goalMainGuests || 0;
+    const goalTotal = goalMem + goalGuest;
+    const actual = sm.main.members + sm.main.guests;  // 本会の会員＋ゲスト
+    const pct = goalTotal > 0 ? Math.round(actual / goalTotal * 100) : 0;
     const barPct = Math.min(100, pct);
-    const reached = mem >= goal;
-    const breakdown = (d, showTotalOfMembers) => `会員 <strong>${d.members}</strong>${showTotalOfMembers?` / ${HIROSHIMA_MEMBER_COUNT}`:''} ・ ゲスト <strong>${d.guests}</strong> ・ 社員 <strong>${d.employees}</strong> ・ その他 <strong>${d.others}</strong>`;
-    return `
-      <div class="card" style="padding:16px;margin-bottom:16px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-          <span style="font-size:13px;font-weight:800">🏛 本会 <span style="color:var(--indigo)">計 ${sm.main.total}名</span></span>
-        </div>
-        <div style="font-size:12px;color:var(--ink-mid);margin-bottom:8px">${breakdown(sm.main, true)}</div>
-        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
-          <span style="color:var(--ink-mid)">動員目標 <strong>${goal}名</strong>（会員の2/3）</span>
+    const reached = goalTotal > 0 && actual >= goalTotal;
+    const memPart = `会員 <strong>${sm.main.members}</strong>${goalMem?` / 目標${goalMem}`:''}`;
+    const guestPart = `ゲスト <strong>${sm.main.guests}</strong>${goalGuest?` / 目標${goalGuest}`:''}`;
+    const goalBar = goalTotal > 0 ? `
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin:8px 0 4px">
+          <span style="color:var(--ink-mid)">本会動員目標 <strong>${goalTotal}名</strong>（会員${goalMem}＋ゲスト${goalGuest}）</span>
           <span style="font-weight:800;color:${reached?'var(--green)':'var(--gold-dark)'}">${pct}%</span>
         </div>
         <div style="height:12px;background:#E4EDF5;border-radius:6px;overflow:hidden">
           <div style="height:100%;width:${barPct}%;background:linear-gradient(90deg,#5BC0F0,#1C6BA8);transition:width .5s;border-radius:6px"></div>
         </div>
         <div style="font-size:12px;font-weight:700;margin-top:6px;color:${reached?'var(--green)':'var(--gold-dark)'}">
-          ${reached ? '🎉 動員目標を達成しました！' : `🔥 あと <strong>${goal-mem}名</strong> で目標達成！`}
-        </div>
+          ${reached ? '🎉 動員目標を達成しました！' : `🔥 あと <strong>${goalTotal-actual}名</strong> で目標達成！`}
+        </div>` : '';
+    return `
+      <div class="card" style="padding:16px;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:800;margin-bottom:4px">🏛 本会 <span style="color:var(--indigo)">計 ${sm.main.total}名</span></div>
+        <div style="font-size:12px;color:var(--ink-mid)">${memPart} ・ ${guestPart} ・ 社員 <strong>${sm.main.employees}</strong> ・ その他 <strong>${sm.main.others}</strong></div>
+        ${goalBar}
         <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
           <span style="font-size:13px;font-weight:800">🍻 懇親会 <span style="color:var(--gold-dark)">計 ${sm.social.total}名</span></span>
-          <div style="font-size:12px;color:var(--ink-mid);margin-top:4px">${breakdown(sm.social, false)}</div>
+          <div style="font-size:12px;color:var(--ink-mid);margin-top:4px">会員 <strong>${sm.social.members}</strong> ・ ゲスト <strong>${sm.social.guests}</strong> ・ 社員 <strong>${sm.social.employees}</strong> ・ その他 <strong>${sm.social.others}</strong></div>
         </div>
       </div>`;
   }
@@ -613,6 +620,8 @@
     document.getElementById('ee-desc').value = ev.description || '';
     document.getElementById('ee-sheet').value = ev.roleSheetUrl || '';
     document.getElementById('ee-kportal').value = ev.kportalUrl || '';
+    document.getElementById('ee-goal-mem').value = ev.goalMainMembers ?? '';
+    document.getElementById('ee-goal-guest').value = ev.goalMainGuests ?? '';
     evEditModal.classList.add('open');
   }
   document.getElementById('eeCancel').onclick = () => evEditModal.classList.remove('open');
@@ -631,6 +640,8 @@
         description: document.getElementById('ee-desc').value.trim(),
         roleSheetUrl: document.getElementById('ee-sheet').value.trim(),
         kportalUrl: document.getElementById('ee-kportal').value.trim(),
+        goalMainMembers: parseInt(document.getElementById('ee-goal-mem').value) || 0,
+        goalMainGuests: parseInt(document.getElementById('ee-goal-guest').value) || 0,
         updatedAt: serverTimestamp(),
       };
       await updateDoc(doc(db, 'events', eventId), upd);

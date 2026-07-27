@@ -65,6 +65,10 @@
     <div class="field"><label>内容・概要</label><textarea id="ev-desc" placeholder="イベントの内容を入力"></textarea></div>
     <div class="field"><label>役割分担表（GoogleスプレッドシートURL）</label><input id="ev-sheet" placeholder="https://docs.google.com/spreadsheets/..."><div class="hint">「リンクを知っている全員が閲覧可」または「ウェブに公開」で詳細画面に埋め込み表示されます。特定のタブを表示したい場合は、そのタブを開いた状態のURL（末尾 #gid=…）を貼り付けてください。</div></div>
     <div class="field"><label>K-PORTAL 決済URL（本部決済サイト）</label><input id="ev-kportal" placeholder="https://..."><div class="hint">イベントごとの本部決済ページのURL。詳細画面に決済ボタンとして表示されます。</div></div>
+    <div class="field" style="display:flex;gap:10px">
+      <div style="flex:1"><label>本会 会員目標（人）</label><input type="number" id="ev-goal-mem" min="0" placeholder="例：40"></div>
+      <div style="flex:1"><label>本会 ゲスト目標（人）</label><input type="number" id="ev-goal-guest" min="0" placeholder="例：10"></div>
+    </div>
     <div class="modal-btns">
       <button class="btn btn-outline" id="evCancel">キャンセル</button>
       <button class="btn btn-primary" id="evSave">保存する</button>
@@ -79,7 +83,7 @@
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
   import { db } from './firebase-config.js';
   import { requireAuth, renderTopbar, canEdit } from './auth.js';
-  import { EVENT_TYPES, eventTypeBadge, HIROSHIMA_MEMBER_COUNT, mobilizationGoal } from './constants.js';
+  import { EVENT_TYPES, eventTypeBadge } from './constants.js';
 
   let me = null;
   let allEvents = [];
@@ -156,7 +160,7 @@
             ${ev.location ? `<span>📍 ${esc(ev.location)}</span>` : ''}
             ${past ? '<span class="badge badge-gray">終了</span>' : '<span class="badge badge-gold">予定</span>'}
           </div>
-          ${summaryLineHtml(ev.summary)}
+          ${summaryLineHtml(ev)}
         </div>
       </div>`;
     }).join('');
@@ -164,22 +168,23 @@
 
   function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
-  function summaryLineHtml(sm){
+  function summaryLineHtml(ev){
+    const sm = ev.summary;
     if(!sm) return '';
-    const goal = mobilizationGoal(HIROSHIMA_MEMBER_COUNT);
-    const mem = sm.main?.members||0;
-    const pct = goal>0 ? Math.round(mem/goal*100) : 0;
+    const goalTotal = (ev.goalMainMembers||0) + (ev.goalMainGuests||0);
+    const actual = (sm.main?.members||0) + (sm.main?.guests||0);
+    const pct = goalTotal>0 ? Math.round(actual/goalTotal*100) : 0;
     const barPct = Math.min(100, pct);
-    const reached = mem>=goal;
+    const reached = goalTotal>0 && actual>=goalTotal;
     return `<div style="margin-top:8px">
       <div style="display:flex;gap:12px;font-size:11px;color:var(--ink-mid);margin-bottom:4px;flex-wrap:wrap">
-        <span>🏛 本会 <strong style="color:var(--indigo)">${sm.main?.total||0}</strong>名</span>
+        <span>🏛 本会 <strong style="color:var(--indigo)">${sm.main?.total||0}</strong>名（会員${sm.main?.members||0}・ゲスト${sm.main?.guests||0}）</span>
         <span>🍻 懇親会 <strong style="color:var(--gold-dark)">${sm.social?.total||0}</strong>名</span>
-        <span>会員 ${mem}/${HIROSHIMA_MEMBER_COUNT}（目標${goal}）</span>
+        ${goalTotal>0?`<span>目標${goalTotal}（${pct}%）</span>`:''}
       </div>
-      <div style="height:6px;background:#E4EDF5;border-radius:3px;overflow:hidden;max-width:280px">
+      ${goalTotal>0?`<div style="height:6px;background:#E4EDF5;border-radius:3px;overflow:hidden;max-width:280px">
         <div style="height:100%;width:${barPct}%;background:${reached?'var(--green)':'linear-gradient(90deg,#5BC0F0,#1C6BA8)'};border-radius:3px"></div>
-      </div>
+      </div>`:''}
     </div>`;
   }
 
@@ -202,6 +207,8 @@
     document.getElementById('ev-desc').value = ev?.description || '';
     document.getElementById('ev-sheet').value = ev?.roleSheetUrl || '';
     document.getElementById('ev-kportal').value = ev?.kportalUrl || '';
+    document.getElementById('ev-goal-mem').value = ev?.goalMainMembers ?? '';
+    document.getElementById('ev-goal-guest').value = ev?.goalMainGuests ?? '';
     modal.classList.add('open');
   }
   document.getElementById('addBtn').onclick = () => openModal(null);
@@ -222,6 +229,8 @@
       description: document.getElementById('ev-desc').value.trim(),
       roleSheetUrl: document.getElementById('ev-sheet').value.trim(),
       kportalUrl: document.getElementById('ev-kportal').value.trim(),
+      goalMainMembers: parseInt(document.getElementById('ev-goal-mem').value) || 0,
+      goalMainGuests: parseInt(document.getElementById('ev-goal-guest').value) || 0,
       updatedAt: serverTimestamp(),
     };
     const btn = document.getElementById('evSave');

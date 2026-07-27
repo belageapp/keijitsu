@@ -72,7 +72,7 @@ export async function logout() {
 export function renderTopbar(userData, active) {
   const links = [
     { key: 'events',  label: 'イベント', href: 'index.html' },
-    { key: 'members', label: 'メンバー', href: 'members.html' },
+    { key: 'members', label: '会員', href: 'members.html' },
   ];
   if (isAdmin(userData)) links.push({ key: 'admin', label: '会員管理', href: 'admin.html' });
 
