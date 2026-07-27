@@ -127,12 +127,21 @@
   // GoogleスプレッドシートURLを「埋め込み（閲覧）」用に変換（gidで特定タブを表示）
   function sheetEmbedUrl(url){
     if(!url) return '';
-    if(url.includes('/pubhtml')) return url + (url.includes('?')?'&':'?') + 'widget=true&headers=false';
-    if(url.includes('/pub'))     return url;
+    const gid = (url.match(/[#&?]gid=([0-9]+)/)||[])[1];
+    // ウェブに公開（pubhtml）：gid があれば single=true でそのタブのみ表示
+    if(url.includes('/pubhtml')){
+      const base = url.split('#')[0];
+      const params = [];
+      if(gid){ params.push('gid='+gid); params.push('single=true'); }
+      params.push('widget=true'); params.push('headers=false');
+      return base + (base.includes('?')?'&':'?') + params.join('&');
+    }
+    if(url.includes('/pub')) return url;
     const m = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
     if(m){
-      const gid = (url.match(/[#&?]gid=([0-9]+)/)||[])[1];
-      return `https://docs.google.com/spreadsheets/d/${m[1]}/preview${gid?('?gid='+gid):''}`;
+      // gid 指定時は htmlembed（そのタブだけを確実に表示）／未指定は preview
+      if(gid) return `https://docs.google.com/spreadsheets/d/${m[1]}/htmlembed?gid=${gid}`;
+      return `https://docs.google.com/spreadsheets/d/${m[1]}/preview`;
     }
     return url;
   }
