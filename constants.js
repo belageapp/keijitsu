@@ -29,6 +29,19 @@ export const EVENT_TYPES = [
 // 動員目標・進捗バーを表示する種別（この4種別のみ。オリエンin広島は対象外）
 export const MOBILIZATION_TYPES = ['特別講演in広島', '定例会in広島', '交流会in広島', '近未来in広島'];
 
+// 種別セレクトの<option>群（in広島グループの後に区切り線を挿入）
+export function eventTypeOptionsInner() {
+  let html = '';
+  EVENT_TYPES.forEach((t, i) => {
+    html += `<option value="${t}">${t}</option>`;
+    const next = EVENT_TYPES[i+1] || '';
+    if (t.endsWith('in広島') && !next.endsWith('in広島')) {
+      html += `<option disabled>──────────</option>`;
+    }
+  });
+  return html;
+}
+
 // 種別バッジの色（未指定は既定色）
 export const EVENT_TYPE_COLOR = {
   '特別講演in広島': { bg:'#DCEBFF', color:'#12508C' },

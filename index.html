@@ -83,7 +83,7 @@
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
   import { db } from './firebase-config.js';
   import { requireAuth, renderTopbar, canEdit } from './auth.js';
-  import { EVENT_TYPES, eventTypeBadge, MOBILIZATION_TYPES } from './constants.js';
+  import { EVENT_TYPES, eventTypeBadge, MOBILIZATION_TYPES, eventTypeOptionsInner } from './constants.js';
 
   let me = null;
   let allEvents = [];
@@ -93,9 +93,9 @@
 
   // 種別セレクトを構築（モーダル用・絞り込み用）
   document.getElementById('ev-type').innerHTML =
-    '<option value="">（未設定）</option>' + EVENT_TYPES.map(t => `<option value="${t}">${t}</option>`).join('');
+    '<option value="">（未設定）</option>' + eventTypeOptionsInner();
   document.getElementById('type-filter').innerHTML =
-    '<option value="">すべての種別</option>' + EVENT_TYPES.map(t => `<option value="${t}">${t}</option>`).join('');
+    '<option value="">すべての種別</option>' + eventTypeOptionsInner();
   document.getElementById('type-filter').onchange = (e) => { typeFilter = e.target.value; render(); };
   document.getElementById('ev-search').oninput = (e) => { evKw = e.target.value.toLowerCase().trim(); render(); };
 

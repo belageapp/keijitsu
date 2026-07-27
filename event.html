@@ -145,11 +145,11 @@
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
   import { db, storage } from './firebase-config.js';
   import { requireAuth, renderTopbar, canEdit } from './auth.js';
-  import { EVENT_TYPES, eventTypeBadge, INDUSTRIES, industryBadge, OTHER_CATEGORIES, MOBILIZATION_TYPES } from './constants.js';
+  import { EVENT_TYPES, eventTypeBadge, INDUSTRIES, industryBadge, OTHER_CATEGORIES, MOBILIZATION_TYPES, eventTypeOptionsInner } from './constants.js';
 
   // 種別セレクトを構築
   document.getElementById('ee-type').innerHTML =
-    '<option value="">（未設定）</option>' + EVENT_TYPES.map(t => `<option value="${t}">${t}</option>`).join('');
+    '<option value="">（未設定）</option>' + eventTypeOptionsInner();
 
   const eventId = new URLSearchParams(location.search).get('id');
   let me = null, ev = null, members = [], memberMap = {}, attendance = [];
