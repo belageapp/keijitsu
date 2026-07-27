@@ -78,3 +78,13 @@ export function industryBadge(name) {
   if (!name) return '';
   return `<span style="display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:9px;background:#E4F1FB;color:#1C6BA8;border:1px solid #C7E0F2">${name}</span>`;
 }
+
+// 広島会員数（暫定。実数が確定したらここを更新）
+export const HIROSHIMA_MEMBER_COUNT = 65;
+// 動員目標＝会員数の2/3
+export function mobilizationGoal(count = HIROSHIMA_MEMBER_COUNT) {
+  return Math.ceil(count * 2 / 3);
+}
+
+// その他出席者の区分
+export const OTHER_CATEGORIES = ['県外', '本部役員', '講演者', 'その他'];

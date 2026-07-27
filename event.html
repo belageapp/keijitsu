@@ -141,7 +141,7 @@
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
   import { db, storage } from './firebase-config.js';
   import { requireAuth, renderTopbar, canEdit } from './auth.js';
-  import { EVENT_TYPES, eventTypeBadge, INDUSTRIES, industryBadge } from './constants.js';
+  import { EVENT_TYPES, eventTypeBadge, INDUSTRIES, industryBadge, HIROSHIMA_MEMBER_COUNT, mobilizationGoal, OTHER_CATEGORIES } from './constants.js';
 
   // 種別セレクトを構築
   document.getElementById('ee-type').innerHTML =
@@ -229,6 +229,51 @@
     return invUid ? memberMap[invUid]?.name : null;
   }
 
+  // ── 参加人数の集計 ──
+  function computeSummary() {
+    const s = { main:{members:0,guests:0,employees:0,others:0}, social:{members:0,guests:0,employees:0,others:0} };
+    attendance.forEach(a => {
+      if (a.main === 'attending') s.main.members++;
+      if (a.social === 'attending') s.social.members++;
+      (a.guests||[]).forEach(g => { if (g.joinMain) s.main.guests++; if (g.joinSocial) s.social.guests++; });
+      (a.employees||[]).forEach(e => { if (e.joinMain) s.main.employees++; if (e.joinSocial) s.social.employees++; });
+    });
+    (ev.others||[]).forEach(o => { if (o.joinMain) s.main.others++; if (o.joinSocial) s.social.others++; });
+    s.main.total = s.main.members+s.main.guests+s.main.employees+s.main.others;
+    s.social.total = s.social.members+s.social.guests+s.social.employees+s.social.others;
+    return s;
+  }
+
+  function summaryPanelHtml(sm) {
+    const goal = mobilizationGoal(HIROSHIMA_MEMBER_COUNT);
+    const mem = sm.main.members;
+    const pct = goal > 0 ? Math.round(mem / goal * 100) : 0;
+    const barPct = Math.min(100, pct);
+    const reached = mem >= goal;
+    const breakdown = (d, showTotalOfMembers) => `会員 <strong>${d.members}</strong>${showTotalOfMembers?` / ${HIROSHIMA_MEMBER_COUNT}`:''} ・ ゲスト <strong>${d.guests}</strong> ・ 社員 <strong>${d.employees}</strong> ・ その他 <strong>${d.others}</strong>`;
+    return `
+      <div class="card" style="padding:16px;margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-size:13px;font-weight:800">🏛 本会 <span style="color:var(--indigo)">計 ${sm.main.total}名</span></span>
+        </div>
+        <div style="font-size:12px;color:var(--ink-mid);margin-bottom:8px">${breakdown(sm.main, true)}</div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+          <span style="color:var(--ink-mid)">動員目標 <strong>${goal}名</strong>（会員の2/3）</span>
+          <span style="font-weight:800;color:${reached?'var(--green)':'var(--gold-dark)'}">${pct}%</span>
+        </div>
+        <div style="height:12px;background:#E4EDF5;border-radius:6px;overflow:hidden">
+          <div style="height:100%;width:${barPct}%;background:linear-gradient(90deg,#5BC0F0,#1C6BA8);transition:width .5s;border-radius:6px"></div>
+        </div>
+        <div style="font-size:12px;font-weight:700;margin-top:6px;color:${reached?'var(--green)':'var(--gold-dark)'}">
+          ${reached ? '🎉 動員目標を達成しました！' : `🔥 あと <strong>${goal-mem}名</strong> で目標達成！`}
+        </div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+          <span style="font-size:13px;font-weight:800">🍻 懇親会 <span style="color:var(--gold-dark)">計 ${sm.social.total}名</span></span>
+          <div style="font-size:12px;color:var(--ink-mid);margin-top:4px">${breakdown(sm.social, false)}</div>
+        </div>
+      </div>`;
+  }
+
   function render() {
     const editable = canEdit(me);
     const TABS = [
@@ -252,6 +297,7 @@
         <div class="meta-row">🗓 ${fmtDateTime(ev.startAt)}${ev.endAt ? ' 〜 ' + fmtDateTime(ev.endAt).split(') ')[1] : ''}</div>
         ${ev.location ? `<div class="meta-row">📍 ${esc(ev.location)}</div>` : ''}
       </div>
+      ${summaryPanelHtml(computeSummary())}
       <div class="ev-tabs">
         ${TABS.map(t => `<button class="ev-tab ${t.key===currentTab?'active':''}" data-tab="${t.key}">${t.label}</button>`).join('')}
       </div>
@@ -339,8 +385,58 @@
         <button class="btn btn-primary" id="saveAttBtn" style="width:100%;margin-top:6px">参加登録を保存する</button>
       </div>
 
+      ${editable ? `
+      <div class="card sec">
+        <div class="sec-title"><span class="ico">🎤</span>その他の出席者（県外・本部役員・講演者など）</div>
+        <div id="others-list">${(ev.others||[]).map(otherCardHtml).join('')}</div>
+        <button type="button" class="btn btn-outline btn-sm" id="addOtherBtn">＋ その他出席者を追加</button>
+        <button class="btn btn-primary" id="saveOthersBtn" style="width:100%;margin-top:10px">その他出席者を保存する</button>
+      </div>` : ''}
+
       ${participationStatusHtml(editable)}
     `;
+  }
+
+  const otherCatOptions = (sel) => OTHER_CATEGORIES.map(c => `<option value="${c}"${c===sel?' selected':''}>${c}</option>`).join('');
+  function otherCardHtml(o = {}) {
+    return `<div class="pcard other-card">
+      <div class="pc-head"><span style="font-size:12px;font-weight:800;color:var(--ink-mid)">🎤 その他出席者</span><button type="button" class="pc-del">✕ 削除</button></div>
+      <input class="o-name" placeholder="お名前" value="${escAttr(o.name)}">
+      <select class="o-category">${otherCatOptions(o.category)}</select>
+      <div>
+        <label class="chk"><input type="checkbox" class="o-main" ${o.joinMain?'checked':''}>本会</label>
+        <label class="chk"><input type="checkbox" class="o-social" ${o.joinSocial?'checked':''}>懇親会</label>
+      </div>
+    </div>`;
+  }
+  function collectOthers() {
+    return [...document.querySelectorAll('#others-list .other-card')].map(el => ({
+      name: el.querySelector('.o-name').value.trim(),
+      category: el.querySelector('.o-category').value,
+      joinMain: el.querySelector('.o-main').checked,
+      joinSocial: el.querySelector('.o-social').checked,
+    })).filter(o => o.name);
+  }
+  async function saveOthers() {
+    const others = collectOthers();
+    const btn = document.getElementById('saveOthersBtn');
+    btn.disabled = true; btn.textContent = '保存中...';
+    try {
+      await updateDoc(doc(db, 'events', eventId), { others });
+      ev.others = others;
+      await updateEventSummary();
+      render();
+      showToast('その他出席者を保存しました');
+    } catch (e) { showToast('エラー：' + e.message); btn.disabled = false; btn.textContent = 'その他出席者を保存する'; }
+  }
+
+  // イベント一覧用に人数サマリーをイベントドキュメントへ保存
+  async function updateEventSummary() {
+    try {
+      const summary = computeSummary();
+      await updateDoc(doc(db, 'events', eventId), { summary });
+      ev.summary = summary;
+    } catch (e) { console.warn('summary更新失敗', e); }
   }
 
   // 本会・懇親会それぞれの参加者を集計
@@ -354,10 +450,11 @@
       (a.guests || []).forEach(g => { if (kind==='main' ? g.joinMain : g.joinSocial) list.push({ label: g.name || 'ゲスト', kind:'guest', by:m?.name, company:g.company, settled:g.settled }); });
       (a.employees || []).forEach(e => { if (kind==='main' ? e.joinMain : e.joinSocial) list.push({ label: e.name || '社員', kind:'emp', by:m?.name, settled:e.settled }); });
     });
+    (ev.others || []).forEach(o => { if (kind==='main' ? o.joinMain : o.joinSocial) list.push({ label: o.name || 'その他', kind:'other', company:o.category }); });
     return list;
   }
   function pstatRowHtml(p, editable) {
-    const tag = p.kind==='guest' ? `<span class="pill-guest">ゲスト</span>` : p.kind==='emp' ? `<span class="pill-emp">社員</span>` : '';
+    const tag = p.kind==='guest' ? `<span class="pill-guest">ゲスト</span>` : p.kind==='emp' ? `<span class="pill-emp">社員</span>` : p.kind==='other' ? `<span class="pill-guest">その他</span>` : '';
     const by = p.by ? `<span style="font-size:11px;color:var(--ink-light)">（${esc(p.by)}）</span>` : '';
     const name = p.kind==='member' ? `<a href="profile.html?uid=${p.uid}" style="font-weight:600">${esc(p.label)}</a>` : `<span style="font-weight:600">${esc(p.label)}</span>`;
     const company = p.company ? `<span style="font-size:11px;color:var(--ink-mid)">${esc(p.company)}</span>` : '';
@@ -381,8 +478,14 @@
     document.getElementById('addGuestBtn').onclick = () => { document.getElementById('guests-list').insertAdjacentHTML('beforeend', guestCardHtml({})); bindPcardDeletes(); };
     document.getElementById('addEmpBtn').onclick = () => { document.getElementById('emps-list').insertAdjacentHTML('beforeend', empCardHtml({})); bindPcardDeletes(); };
     document.getElementById('saveAttBtn').onclick = saveMyParticipation;
+    if (editable) {
+      const ao = document.getElementById('addOtherBtn');
+      if (ao) ao.onclick = () => { document.getElementById('others-list').insertAdjacentHTML('beforeend', otherCardHtml({})); bindPcardDeletes(); };
+      const so = document.getElementById('saveOthersBtn');
+      if (so) so.onclick = saveOthers;
+      document.querySelectorAll('#tab-panel [data-inviter]').forEach(b => b.onclick = () => openInviterModal(b.dataset.inviter));
+    }
     bindPcardDeletes();
-    if (editable) document.querySelectorAll('#tab-panel [data-inviter]').forEach(b => b.onclick = () => openInviterModal(b.dataset.inviter));
   }
   function bindPcardDeletes() {
     document.querySelectorAll('#tab-panel .pc-del').forEach(b => b.onclick = (e) => e.target.closest('.pcard').remove());
@@ -423,6 +526,7 @@
       await setDoc(doc(db, 'events', eventId, 'attendance', me.uid), data, { merge: true });
       const ex = attendance.find(a => a.uid === me.uid);
       if (ex) Object.assign(ex, data); else attendance.push({ uid: me.uid, ...data });
+      await updateEventSummary();
       render();
       showToast('参加登録を保存しました');
     } catch (e) { showToast('エラー：' + e.message); btn.disabled = false; btn.textContent = '参加登録を保存する'; }

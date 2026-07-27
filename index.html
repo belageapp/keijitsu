@@ -79,7 +79,7 @@
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
   import { db } from './firebase-config.js';
   import { requireAuth, renderTopbar, canEdit } from './auth.js';
-  import { EVENT_TYPES, eventTypeBadge } from './constants.js';
+  import { EVENT_TYPES, eventTypeBadge, HIROSHIMA_MEMBER_COUNT, mobilizationGoal } from './constants.js';
 
   let me = null;
   let allEvents = [];
@@ -156,12 +156,32 @@
             ${ev.location ? `<span>📍 ${esc(ev.location)}</span>` : ''}
             ${past ? '<span class="badge badge-gray">終了</span>' : '<span class="badge badge-gold">予定</span>'}
           </div>
+          ${summaryLineHtml(ev.summary)}
         </div>
       </div>`;
     }).join('');
   }
 
   function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+  function summaryLineHtml(sm){
+    if(!sm) return '';
+    const goal = mobilizationGoal(HIROSHIMA_MEMBER_COUNT);
+    const mem = sm.main?.members||0;
+    const pct = goal>0 ? Math.round(mem/goal*100) : 0;
+    const barPct = Math.min(100, pct);
+    const reached = mem>=goal;
+    return `<div style="margin-top:8px">
+      <div style="display:flex;gap:12px;font-size:11px;color:var(--ink-mid);margin-bottom:4px;flex-wrap:wrap">
+        <span>🏛 本会 <strong style="color:var(--indigo)">${sm.main?.total||0}</strong>名</span>
+        <span>🍻 懇親会 <strong style="color:var(--gold-dark)">${sm.social?.total||0}</strong>名</span>
+        <span>会員 ${mem}/${HIROSHIMA_MEMBER_COUNT}（目標${goal}）</span>
+      </div>
+      <div style="height:6px;background:#E4EDF5;border-radius:3px;overflow:hidden;max-width:280px">
+        <div style="height:100%;width:${barPct}%;background:${reached?'var(--green)':'linear-gradient(90deg,#5BC0F0,#1C6BA8)'};border-radius:3px"></div>
+      </div>
+    </div>`;
+  }
 
   // フィルタタブ
   document.querySelectorAll('.filter-tab').forEach(t => t.onclick = () => {
