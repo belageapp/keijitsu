@@ -309,7 +309,7 @@
         <div class="meta-row">🗓 ${fmtDateTime(ev.startAt)}${ev.endAt ? ' 〜 ' + fmtDateTime(ev.endAt).split(') ')[1] : ''}</div>
         ${ev.location ? `<div class="meta-row">📍 ${esc(ev.location)}</div>` : ''}
       </div>
-      ${summaryPanelHtml(computeSummary())}
+      ${MOBILIZATION_TYPES.includes(ev.eventType) ? summaryPanelHtml(computeSummary()) : ''}
       <div class="ev-tabs">
         ${TABS.map(t => `<button class="ev-tab ${t.key===currentTab?'active':''}" data-tab="${t.key}">${t.label}</button>`).join('')}
       </div>
