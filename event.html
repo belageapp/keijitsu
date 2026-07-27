@@ -57,6 +57,7 @@
   <div class="modal">
     <div class="modal-title">イベント編集</div>
     <div class="field"><label>タイトル <span style="color:var(--red)">*</span></label><input id="ee-title"></div>
+    <div class="field"><label>イベント種別</label><select id="ee-type"></select></div>
     <div class="field" style="display:flex;gap:10px">
       <div style="flex:1"><label>開始日時 <span style="color:var(--red)">*</span></label><input type="datetime-local" id="ee-start"></div>
       <div style="flex:1"><label>終了日時</label><input type="datetime-local" id="ee-end"></div>
@@ -110,6 +111,11 @@
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
   import { db, storage } from './firebase-config.js';
   import { requireAuth, renderTopbar, canEdit } from './auth.js';
+  import { EVENT_TYPES, eventTypeBadge } from './constants.js';
+
+  // 種別セレクトを構築
+  document.getElementById('ee-type').innerHTML =
+    '<option value="">（未設定）</option>' + EVENT_TYPES.map(t => `<option value="${t}">${t}</option>`).join('');
 
   const eventId = new URLSearchParams(location.search).get('id');
   let me = null, ev = null, members = [], memberMap = {}, attendance = [];
@@ -169,7 +175,10 @@
       <!-- ヒーロー -->
       <div class="card ev-hero">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
-          <h1>${esc(ev.title)}</h1>
+          <div>
+            ${ev.eventType ? `<div style="margin-bottom:6px">${eventTypeBadge(ev.eventType)}</div>` : ''}
+            <h1>${esc(ev.title)}</h1>
+          </div>
           ${editable ? `<div style="display:flex;gap:6px;flex-shrink:0">
             <button class="btn btn-outline btn-sm" id="editEvBtn">編集</button>
             <button class="btn btn-danger btn-sm" id="delEvBtn">削除</button>
@@ -284,6 +293,7 @@
   }
   function openEditModal() {
     document.getElementById('ee-title').value = ev.title || '';
+    document.getElementById('ee-type').value = ev.eventType || '';
     document.getElementById('ee-start').value = toLocalInput(ev.startAt);
     document.getElementById('ee-end').value = toLocalInput(ev.endAt);
     document.getElementById('ee-location').value = ev.location || '';
@@ -299,6 +309,7 @@
     try {
       const upd = {
         title,
+        eventType: document.getElementById('ee-type').value,
         startAt: new Date(startStr),
         endAt: endStr ? new Date(endStr) : null,
         location: document.getElementById('ee-location').value.trim(),

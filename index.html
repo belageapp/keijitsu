@@ -40,10 +40,11 @@
     <div class="page-title"><span class="ico">📅</span>広島管理イベント 一覧</div>
     <button class="btn btn-primary" id="addBtn" style="display:none">＋ イベント追加</button>
   </div>
-  <div class="filter-tabs">
+  <div class="filter-tabs" style="align-items:center">
     <div class="filter-tab active" data-f="upcoming">開催予定</div>
     <div class="filter-tab" data-f="past">過去</div>
     <div class="filter-tab" data-f="all">すべて</div>
+    <select id="type-filter" style="margin-left:auto;padding:6px 12px;border:1.5px solid var(--border);border-radius:20px;font-family:inherit;font-size:12px;font-weight:700;color:var(--ink-mid);background:#fff"></select>
   </div>
   <div class="card"><div id="list"><div class="loading">読み込み中...</div></div></div>
 </div>
@@ -54,6 +55,7 @@
     <div class="modal-title" id="evModalTitle">イベント追加</div>
     <input type="hidden" id="ev-id">
     <div class="field"><label>タイトル <span style="color:var(--red)">*</span></label><input id="ev-title" placeholder="例：7月例会"></div>
+    <div class="field"><label>イベント種別</label><select id="ev-type"></select></div>
     <div class="field" style="display:flex;gap:10px">
       <div style="flex:1"><label>開始日時 <span style="color:var(--red)">*</span></label><input type="datetime-local" id="ev-start"></div>
       <div style="flex:1"><label>終了日時</label><input type="datetime-local" id="ev-end"></div>
@@ -74,10 +76,19 @@
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
   import { db } from './firebase-config.js';
   import { requireAuth, renderTopbar, canEdit } from './auth.js';
+  import { EVENT_TYPES, eventTypeBadge } from './constants.js';
 
   let me = null;
   let allEvents = [];
   let filter = 'upcoming';
+  let typeFilter = '';
+
+  // 種別セレクトを構築（モーダル用・絞り込み用）
+  document.getElementById('ev-type').innerHTML =
+    '<option value="">（未設定）</option>' + EVENT_TYPES.map(t => `<option value="${t}">${t}</option>`).join('');
+  document.getElementById('type-filter').innerHTML =
+    '<option value="">すべての種別</option>' + EVENT_TYPES.map(t => `<option value="${t}">${t}</option>`).join('');
+  document.getElementById('type-filter').onchange = (e) => { typeFilter = e.target.value; render(); };
 
   const WD = ['日','月','火','水','木','金','土'];
   function fmtDate(ts) {
@@ -112,6 +123,7 @@
     const el = document.getElementById('list');
     const now = new Date();
     let rows = allEvents.map(ev => ({ ...ev, _d: fmtDate(ev.startAt) }));
+    if (typeFilter) rows = rows.filter(r => r.eventType === typeFilter);
     if (filter === 'upcoming') rows = rows.filter(r => r._d && r._d >= new Date(now.toDateString())).sort((a,b)=>a._d-b._d);
     else if (filter === 'past') rows = rows.filter(r => !r._d || r._d < new Date(now.toDateString())).sort((a,b)=>b._d-a._d);
     else rows.sort((a,b)=> (b._d||0)-(a._d||0));
@@ -131,6 +143,7 @@
       return `<div class="event-item ${past?'ev-past':''}" onclick="location.href='event.html?id=${ev.id}'">
         ${dateBox}
         <div class="ev-main">
+          <div style="margin-bottom:3px">${eventTypeBadge(ev.eventType)}</div>
           <div class="ev-title">${esc(ev.title)}</div>
           <div class="ev-meta">
             ${time ? `<span>🕐 ${time}</span>` : ''}
@@ -156,6 +169,7 @@
     document.getElementById('evModalTitle').textContent = ev ? 'イベント編集' : 'イベント追加';
     document.getElementById('ev-id').value = ev?.id || '';
     document.getElementById('ev-title').value = ev?.title || '';
+    document.getElementById('ev-type').value = ev?.eventType || '';
     document.getElementById('ev-start').value = ev?.startAt ? toLocalInput(fmtDate(ev.startAt)) : '';
     document.getElementById('ev-end').value = ev?.endAt ? toLocalInput(fmtDate(ev.endAt)) : '';
     document.getElementById('ev-location').value = ev?.location || '';
@@ -173,6 +187,7 @@
     const endStr = document.getElementById('ev-end').value;
     const data = {
       title,
+      eventType: document.getElementById('ev-type').value,
       startAt: new Date(startStr),
       endAt: endStr ? new Date(endStr) : null,
       location: document.getElementById('ev-location').value.trim(),

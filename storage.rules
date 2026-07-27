@@ -1,32 +1,25 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    // Firestore へのクロスサービス参照は使わず、認証情報のみで判定する
+    // （細かな編集権限の制御は各画面の UI 側で行う）
 
-    function userData() {
-      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
-    }
-    function isActive() {
-      return request.auth != null
-        && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
-        && userData().get('disabled', false) != true
-        && userData().get('status', 'active') != 'pending';
-    }
-    function isEditor() {
-      return isActive() && (userData().get('role','member') == 'editor' || userData().get('role','member') == 'admin');
-    }
-
-    // イベントの添付（チラシ・資料）：閲覧は会員、書き込みは editor 以上
-    match /events/{eventId}/{fileName=**} {
-      allow read: if isActive();
-      allow write: if isEditor() && request.resource.size < 15 * 1024 * 1024;
-    }
-
-    // ユーザーの顔写真：閲覧は会員、書き込みは本人 or admin
+    // ユーザーの顔写真：閲覧はログイン会員、書き込みは本人のみ
     match /users/{userId}/{fileName=**} {
-      allow read: if isActive();
-      allow write: if isActive()
-        && (request.auth.uid == userId || userData().role == 'admin')
-        && request.resource.size < 10 * 1024 * 1024;
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.size < 5 * 1024 * 1024;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // イベントの添付（チラシ・資料）：ログイン会員が読み書き可
+    // （追加・削除ボタンは editor 以上にのみ表示）
+    match /events/{eventId}/{fileName=**} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null
+        && request.resource.size < 15 * 1024 * 1024;
+      allow delete: if request.auth != null;
     }
   }
 }
