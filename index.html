@@ -63,6 +63,7 @@
     </div>
     <div class="field"><label>開催場所</label><input id="ev-location" placeholder="例：〇〇会館 3F"></div>
     <div class="field"><label>内容・概要</label><textarea id="ev-desc" placeholder="イベントの内容を入力"></textarea></div>
+    <div class="field"><label>役割分担表（GoogleスプレッドシートURL）</label><input id="ev-sheet" placeholder="https://docs.google.com/spreadsheets/..."><div class="hint">「リンクを知っている全員が閲覧可」または「ウェブに公開」にしておくと詳細画面に埋め込み表示されます</div></div>
     <div class="modal-btns">
       <button class="btn btn-outline" id="evCancel">キャンセル</button>
       <button class="btn btn-primary" id="evSave">保存する</button>
@@ -178,6 +179,7 @@
     document.getElementById('ev-end').value = ev?.endAt ? toLocalInput(fmtDate(ev.endAt)) : '';
     document.getElementById('ev-location').value = ev?.location || '';
     document.getElementById('ev-desc').value = ev?.description || '';
+    document.getElementById('ev-sheet').value = ev?.roleSheetUrl || '';
     modal.classList.add('open');
   }
   document.getElementById('addBtn').onclick = () => openModal(null);
@@ -196,6 +198,7 @@
       endAt: endStr ? new Date(endStr) : null,
       location: document.getElementById('ev-location').value.trim(),
       description: document.getElementById('ev-desc').value.trim(),
+      roleSheetUrl: document.getElementById('ev-sheet').value.trim(),
       updatedAt: serverTimestamp(),
     };
     const btn = document.getElementById('evSave');

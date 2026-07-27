@@ -64,6 +64,7 @@
     </div>
     <div class="field"><label>開催場所</label><input id="ee-location"></div>
     <div class="field"><label>内容・概要</label><textarea id="ee-desc"></textarea></div>
+    <div class="field"><label>役割分担表（GoogleスプレッドシートURL）</label><input id="ee-sheet" placeholder="https://docs.google.com/spreadsheets/..."><div class="hint">「リンクを知っている全員が閲覧可」または「ウェブに公開」で埋め込み表示されます</div></div>
     <div class="modal-btns">
       <button class="btn btn-outline" id="eeCancel">キャンセル</button>
       <button class="btn btn-primary" id="eeSave">保存する</button>
@@ -122,6 +123,19 @@
 
   const WD = ['日','月','火','水','木','金','土'];
   function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function escAttr(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+  // GoogleスプレッドシートURLを埋め込み用に変換
+  function sheetEmbedUrl(url){
+    if(!url) return '';
+    if(url.includes('/pubhtml')) return url + (url.includes('?')?'&':'?') + 'widget=true&headers=false';
+    if(url.includes('/pub'))     return url;
+    const m = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+    if(m){
+      const gid = (url.match(/[#&?]gid=([0-9]+)/)||[])[1];
+      return `https://docs.google.com/spreadsheets/d/${m[1]}/preview${gid?('?gid='+gid):''}`;
+    }
+    return url;
+  }
   function fmtDateTime(ts){
     const d = ts?.toDate ? ts.toDate() : (ts ? new Date(ts) : null);
     if (!d) return '日時未定';
@@ -219,7 +233,19 @@
             <span class="role-name">${esc(r.roleName)}</span>
             <span class="role-people">${(r.userIds||[]).map(uid => esc(memberMap[uid]?.name || '?')).join('、') || '<span style="color:var(--ink-light)">未割当</span>'}</span>
             ${editable ? `<button class="btn btn-danger btn-sm" data-delrole="${i}">削除</button>` : ''}
-          </div>`).join('') : '<div style="font-size:13px;color:var(--ink-light)">役割はまだ設定されていません</div>'}
+          </div>`).join('') : '<div style="font-size:13px;color:var(--ink-light)">アプリ上の役割はまだ設定されていません</div>'}
+
+        ${ev.roleSheetUrl ? `
+          <div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--border)">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+              <span style="font-size:13px;font-weight:700;color:var(--ink-mid)">📊 役割分担表（スプレッドシート）</span>
+              <a href="${escAttr(ev.roleSheetUrl)}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="text-decoration:none">別画面で開く ↗</a>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">
+              <iframe src="${escAttr(sheetEmbedUrl(ev.roleSheetUrl))}" style="width:100%;height:420px;border:0" loading="lazy"></iframe>
+            </div>
+            <div style="font-size:11px;color:var(--ink-light);margin-top:6px">※ 表示されない場合はシートの共有設定（リンクを知っている全員が閲覧可 / ウェブに公開）をご確認いただくか、「別画面で開く」からご覧ください。</div>
+          </div>` : ''}
       </div>
 
       <!-- 添付 -->
@@ -298,6 +324,7 @@
     document.getElementById('ee-end').value = toLocalInput(ev.endAt);
     document.getElementById('ee-location').value = ev.location || '';
     document.getElementById('ee-desc').value = ev.description || '';
+    document.getElementById('ee-sheet').value = ev.roleSheetUrl || '';
     evEditModal.classList.add('open');
   }
   document.getElementById('eeCancel').onclick = () => evEditModal.classList.remove('open');
@@ -314,6 +341,7 @@
         endAt: endStr ? new Date(endStr) : null,
         location: document.getElementById('ee-location').value.trim(),
         description: document.getElementById('ee-desc').value.trim(),
+        roleSheetUrl: document.getElementById('ee-sheet').value.trim(),
         updatedAt: serverTimestamp(),
       };
       await updateDoc(doc(db, 'events', eventId), upd);
