@@ -4,6 +4,10 @@
 
 // イベント種別（追加・並べ替えはここを編集）
 export const EVENT_TYPES = [
+  '特別講演in広島',
+  '定例会in広島',
+  '交流会in広島',
+  '近未来in広島',
   '特別講演',
   'CL',
   'シンポジウム',
@@ -21,8 +25,15 @@ export const EVENT_TYPES = [
   'トークライブ',
 ];
 
+// 動員目標・進捗バーを表示する種別（この4つのみ）
+export const MOBILIZATION_TYPES = ['特別講演in広島', '定例会in広島', '交流会in広島', '近未来in広島'];
+
 // 種別バッジの色（未指定は既定色）
 export const EVENT_TYPE_COLOR = {
+  '特別講演in広島': { bg:'#DCEBFF', color:'#12508C' },
+  '定例会in広島':   { bg:'#E1F1E7', color:'#1F6E48' },
+  '交流会in広島':   { bg:'#FBEAD5', color:'#9C5F16' },
+  '近未来in広島':   { bg:'#EFE1FB', color:'#6A2E93' },
   '特別講演':   { bg:'#E4F1FB', color:'#1C6BA8' },
   'CL':         { bg:'#E7F1EA', color:'#2E7A54' },
   'シンポジウム':{ bg:'#F3E9FB', color:'#7A3FA0' },
