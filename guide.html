@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>アプリのご案内｜経営実践研究会 広島会員 情報共有アプリ</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  body{background:linear-gradient(180deg,#E3F1FB 0%,#EEF6FC 240px,#EEF6FC 100%);background-attachment:fixed}
+  .sheet{max-width:760px;margin:0 auto;padding:28px 18px 60px}
+  .hero{background:linear-gradient(135deg,#3BA3E6,#1C6BA8);color:#fff;border-radius:18px;padding:34px 28px;text-align:center;box-shadow:0 6px 24px rgba(28,107,168,.25)}
+  .hero .tag{font-size:12px;font-weight:700;letter-spacing:.18em;opacity:.9}
+  .hero h1{font-size:24px;font-weight:800;margin:10px 0 6px;line-height:1.5}
+  .hero p{font-size:14px;opacity:.95;line-height:1.8}
+  .sec-h{font-size:17px;font-weight:800;color:var(--indigo);margin:30px 0 14px;display:flex;align-items:center;gap:8px}
+  .sec-h::before{content:'';width:5px;height:20px;background:linear-gradient(180deg,#5BC0F0,#1C6BA8);border-radius:3px}
+  .lead{font-size:14px;line-height:1.9;color:var(--ink);background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px 20px;box-shadow:0 1px 3px var(--shadow)}
+  .feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+  .feat{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 18px;box-shadow:0 1px 3px var(--shadow)}
+  .feat .ico{font-size:26px}
+  .feat h3{font-size:14px;font-weight:800;margin:8px 0 5px;color:var(--ink)}
+  .feat p{font-size:12.5px;color:var(--ink-mid);line-height:1.8}
+  .steps{counter-reset:s;display:flex;flex-direction:column;gap:12px}
+  .step{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 18px 16px 58px;position:relative;box-shadow:0 1px 3px var(--shadow)}
+  .step::before{counter-increment:s;content:counter(s);position:absolute;left:16px;top:16px;width:28px;height:28px;background:linear-gradient(135deg,#3BA3E6,#1C6BA8);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
+  .step h3{font-size:14px;font-weight:800;margin-bottom:3px}
+  .step p{font-size:13px;color:var(--ink-mid);line-height:1.8}
+  .urlbox{background:#fff;border:2px dashed var(--gold);border-radius:14px;padding:18px 20px;text-align:center;margin-top:8px}
+  .urlbox .label{font-size:12px;color:var(--ink-mid);font-weight:700}
+  .urlbox a{font-size:16px;font-weight:800;color:var(--gold-dark);word-break:break-all}
+  .todo{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 20px;box-shadow:0 1px 3px var(--shadow)}
+  .todo li{font-size:13.5px;line-height:2;color:var(--ink);margin-left:18px}
+  .foot{text-align:center;font-size:12px;color:var(--ink-light);margin-top:30px;line-height:1.9}
+  .noprint{margin-bottom:14px;text-align:right}
+  @media print{ .noprint{display:none} body{background:#fff} .hero{box-shadow:none} }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="noprint"><button class="btn btn-outline btn-sm" onclick="window.print()">🖨 印刷 / PDF保存</button></div>
+
+  <div class="hero">
+    <div class="tag">KEIJITSU HIROSHIMA</div>
+    <h1>広島会員 情報共有アプリ<br>ができました！</h1>
+    <p>経営実践研究会 広島会員のための、<br>イベント・出欠・仲間の事業をひとつにまとめたアプリです。</p>
+  </div>
+
+  <div class="sec-h">これは何？</div>
+  <div class="lead">
+    <strong>広島会員専用</strong>の情報共有アプリです。<br>
+    「本部アプリだとイベント情報が見にくい」「他の会員が何をしているか分かりにくい」——
+    そんな声にお応えして、<strong>広島の会員同士がもっとつながりやすくなる</strong>ように作りました。<br>
+    （本部アプリとは別のシステムです。スマホ・パソコンどちらでも使えます。）
+  </div>
+
+  <div class="sec-h">できること</div>
+  <div class="feat-grid">
+    <div class="feat"><div class="ico">📅</div><h3>イベント一覧・詳細</h3><p>広島のイベントを日時・種別で一覧表示。内容やチラシもその場で確認できます。本部イベントへのリンクも。</p></div>
+    <div class="feat"><div class="ico">✋</div><h3>出欠登録</h3><p>本会・懇親会それぞれに出欠を登録。ゲストや自社の社員の参加、その他出席者も登録できます。</p></div>
+    <div class="feat"><div class="ico">🎯</div><h3>動員目標の見える化</h3><p>広島主催の主要イベントは、会員・ゲストの動員目標と達成率をゲージで表示。会の盛り上げに。</p></div>
+    <div class="feat"><div class="ico">👥</div><h3>会員名簿</h3><p>会社名・志・事業内容・業種を登録して共有。業種バッジやキーワードで“つながりたい仲間”を探せます。</p></div>
+    <div class="feat"><div class="ico">📊</div><h3>役割分担表</h3><p>これまでのGoogleスプレッドシートもアプリ内に表示。役割の割り当ても登録できます。</p></div>
+    <div class="feat"><div class="ico">📸</div><h3>お顔写真</h3><p>その場でカメラ撮影＆トリミングして登録。顔の見える名簿になります。</p></div>
+  </div>
+
+  <div class="sec-h">はじめ方（かんたん3ステップ）</div>
+  <div class="steps">
+    <div class="step"><h3>新規登録する</h3><p>下のURLを開き、お名前・メールアドレス・パスワードを入力して登録します。</p></div>
+    <div class="step"><h3>メール認証する</h3><p>登録したメールに確認メールが届きます。本文のリンクをクリックしてください。</p></div>
+    <div class="step"><h3>承認されたらログイン</h3><p>事務局が承認すると利用開始できます。以降はメールアドレスとパスワードでログインします。</p></div>
+  </div>
+
+  <div class="urlbox">
+    <div class="label">▼ 新規登録・ログインはこちら</div>
+    <a href="https://belageapp.github.io/keijitsu/login.html">belageapp.github.io/keijitsu/</a>
+  </div>
+
+  <div class="sec-h">まずはこれをお願いします</div>
+  <div class="todo">
+    <ul>
+      <li>プロフィールに<strong>会社名・志・事業内容</strong>を登録</li>
+      <li><strong>お顔写真</strong>をアップロード（カメラ撮影OK）</li>
+      <li>参加予定のイベントに<strong>出欠登録</strong></li>
+      <li>気になる会員のプロフィールを見て、<strong>つながりを深める</strong></li>
+    </ul>
+  </div>
+
+  <div class="foot">
+    経営実践研究会 広島会員 情報共有アプリ<br>
+    ご不明な点は事務局までお問い合わせください。
+  </div>
+</div>
+</body>
+</html>
