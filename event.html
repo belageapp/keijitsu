@@ -258,6 +258,12 @@
     const reached = goalTotal > 0 && actual >= goalTotal;
     const memPart = `会員 <strong>${sm.main.members}</strong>${goalMem?` / 目標${goalMem}`:''}`;
     const guestPart = `ゲスト <strong>${sm.main.guests}</strong>${goalGuest?` / 目標${goalGuest}`:''}`;
+    // 会員・ゲスト別の残り人数
+    const remMem = Math.max(0, goalMem - sm.main.members);
+    const remGuest = Math.max(0, goalGuest - sm.main.guests);
+    const remParts = [];
+    if (goalMem) remParts.push(remMem > 0 ? `会員 あと<strong>${remMem}</strong>名` : `会員 <strong>達成🎉</strong>`);
+    if (goalGuest) remParts.push(remGuest > 0 ? `ゲスト あと<strong>${remGuest}</strong>名` : `ゲスト <strong>達成🎉</strong>`);
     const goalBar = goalTotal > 0 ? `
         <div style="display:flex;justify-content:space-between;font-size:11px;margin:8px 0 4px">
           <span style="color:var(--ink-mid)">本会動員目標 <strong>${goalTotal}名</strong>（会員${goalMem}＋ゲスト${goalGuest}）</span>
@@ -267,7 +273,7 @@
           <div style="height:100%;width:${barPct}%;background:linear-gradient(90deg,#5BC0F0,#1C6BA8);transition:width .5s;border-radius:6px"></div>
         </div>
         <div style="font-size:12px;font-weight:700;margin-top:6px;color:${reached?'var(--green)':'var(--gold-dark)'}">
-          ${reached ? '🎉 動員目標を達成しました！' : `🔥 あと <strong>${goalTotal-actual}名</strong> で目標達成！`}
+          ${reached ? '🎉 動員目標を達成しました！' : `🔥 目標まで　${remParts.join('　／　')}`}
         </div>` : '';
     return `
       <div class="card" style="padding:16px;margin-bottom:16px">

@@ -170,21 +170,33 @@
 
   function summaryLineHtml(ev){
     const sm = ev.summary;
-    if(!sm) return '';
-    const goalTotal = (ev.goalMainMembers||0) + (ev.goalMainGuests||0);
-    const actual = (sm.main?.members||0) + (sm.main?.guests||0);
+    const goalMem = ev.goalMainMembers||0, goalGuest = ev.goalMainGuests||0;
+    const goalTotal = goalMem + goalGuest;
+    if(!sm && !goalTotal) return '';
+    const mem = sm?.main?.members||0, guest = sm?.main?.guests||0;
+    const actual = mem + guest;
     const pct = goalTotal>0 ? Math.round(actual/goalTotal*100) : 0;
     const barPct = Math.min(100, pct);
     const reached = goalTotal>0 && actual>=goalTotal;
+    const remMem = Math.max(0, goalMem - mem), remGuest = Math.max(0, goalGuest - guest);
+    const rem = [];
+    if(goalMem) rem.push(remMem>0?`会員あと${remMem}`:`会員達成`);
+    if(goalGuest) rem.push(remGuest>0?`ゲストあと${remGuest}`:`ゲスト達成`);
     return `<div style="margin-top:8px">
       <div style="display:flex;gap:12px;font-size:11px;color:var(--ink-mid);margin-bottom:4px;flex-wrap:wrap">
-        <span>🏛 本会 <strong style="color:var(--indigo)">${sm.main?.total||0}</strong>名（会員${sm.main?.members||0}・ゲスト${sm.main?.guests||0}）</span>
-        <span>🍻 懇親会 <strong style="color:var(--gold-dark)">${sm.social?.total||0}</strong>名</span>
-        ${goalTotal>0?`<span>目標${goalTotal}（${pct}%）</span>`:''}
+        <span>🏛 本会 <strong style="color:var(--indigo)">${sm?.main?.total||0}</strong>名（会員${mem}${goalMem?'/'+goalMem:''}・ゲスト${guest}${goalGuest?'/'+goalGuest:''}）</span>
+        <span>🍻 懇親会 <strong style="color:var(--gold-dark)">${sm?.social?.total||0}</strong>名</span>
       </div>
-      ${goalTotal>0?`<div style="height:6px;background:#E4EDF5;border-radius:3px;overflow:hidden;max-width:280px">
+      ${goalTotal>0?`
+      <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;max-width:280px">
+        <span style="color:var(--ink-light)">動員目標 ${goalTotal}名</span>
+        <span style="font-weight:800;color:${reached?'var(--green)':'var(--gold-dark)'}">${reached?'🎉達成':pct+'%'}</span>
+      </div>
+      <div style="height:6px;background:#E4EDF5;border-radius:3px;overflow:hidden;max-width:280px">
         <div style="height:100%;width:${barPct}%;background:${reached?'var(--green)':'linear-gradient(90deg,#5BC0F0,#1C6BA8)'};border-radius:3px"></div>
-      </div>`:''}
+      </div>
+      ${!reached && rem.length?`<div style="font-size:10px;color:var(--gold-dark);font-weight:700;margin-top:3px">🔥 ${rem.join('・')}</div>`:''}
+      `:''}
     </div>`;
   }
 
