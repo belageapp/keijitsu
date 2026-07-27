@@ -7,6 +7,12 @@
 <title>イベント一覧｜経営実践研究会 広島会員 情報共有アプリ</title>
 <link rel="stylesheet" href="style.css">
 <style>
+  .source-tabs{display:flex;gap:10px;margin-bottom:18px}
+  .source-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:14px 10px;border-radius:12px;border:1.5px solid var(--border);background:#fff;font-weight:800;font-size:14px;color:var(--ink-mid);cursor:pointer;text-align:center;transition:.15s;text-decoration:none}
+  .source-tab .sub{font-size:10px;font-weight:600;color:var(--ink-light)}
+  .source-tab:hover{border-color:var(--gold);color:var(--gold-dark)}
+  .source-tab.active{background:linear-gradient(135deg,#3BA3E6,#1C6BA8);border-color:transparent;color:#fff}
+  .source-tab.active .sub{color:rgba(255,255,255,.85)}
   .filter-tabs{display:flex;gap:6px;margin-bottom:16px}
   .filter-tab{padding:6px 14px;border:1.5px solid var(--border);border-radius:20px;background:#fff;font-size:12px;font-weight:700;color:var(--ink-mid);cursor:pointer}
   .filter-tab.active{background:var(--indigo);border-color:var(--indigo);color:#fff}
@@ -26,8 +32,12 @@
 </head>
 <body>
 <div class="wrap">
+  <div class="source-tabs">
+    <div class="source-tab active">🏯 広島管理イベント<span class="sub">このアプリで管理</span></div>
+    <a class="source-tab" href="https://keijitsu.shikuminet.jp/events/" target="_blank" rel="noopener">🏛 本部管理イベント<span class="sub">本部サイトへ ↗</span></a>
+  </div>
   <div class="page-head">
-    <div class="page-title"><span class="ico">📅</span>イベント一覧</div>
+    <div class="page-title"><span class="ico">📅</span>広島管理イベント 一覧</div>
     <button class="btn btn-primary" id="addBtn" style="display:none">＋ イベント追加</button>
   </div>
   <div class="filter-tabs">
