@@ -4,21 +4,24 @@ service firebase.storage {
     // Firestore へのクロスサービス参照は使わず、認証情報のみで判定する
     // （細かな編集権限の制御は各画面の UI 側で行う）
 
-    // ユーザーの顔写真：閲覧はログイン会員、書き込みは本人のみ
+    // ユーザーの顔写真：閲覧はログイン会員、書き込みは本人のみ・画像のみ・5MBまで
     match /users/{userId}/{fileName=**} {
       allow read:  if request.auth != null;
       allow write: if request.auth != null
         && request.auth.uid == userId
-        && request.resource.size < 5 * 1024 * 1024;
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
       allow delete: if request.auth != null && request.auth.uid == userId;
     }
 
-    // イベントの添付（チラシ・資料）：ログイン会員が読み書き可
-    // （追加・削除ボタンは editor 以上にのみ表示）
+    // イベントの添付（チラシ・資料）：ログイン会員が読み書き可・画像/PDFのみ・15MBまで
+    // （追加・削除ボタンは editor 以上にのみUI表示。ファイル実体の編集権限は
+    //   本アプリにバックエンドが無いため、より厳密な制御はカスタムクレーム導入時に強化）
     match /events/{eventId}/{fileName=**} {
       allow read:  if request.auth != null;
       allow write: if request.auth != null
-        && request.resource.size < 15 * 1024 * 1024;
+        && request.resource.size < 15 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*|application/pdf');
       allow delete: if request.auth != null;
     }
   }

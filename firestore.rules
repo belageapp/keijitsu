@@ -36,20 +36,25 @@ service cloud.firestore {
       // 自分のドキュメントは承認待ちでも読める（他人の閲覧は active 会員のみ）
       allow read: if isAuth() && (request.auth.uid == userId || isActive());
 
-      // admin による作成、または本人による自己登録（member・pending 固定）
+      // admin による作成、または本人による自己登録（member・pending・inviterなし 固定）
       allow create: if isAdmin()
         || (isAuth() && request.auth.uid == userId
             && request.resource.data.role == 'member'
             && request.resource.data.status == 'pending'
-            && request.resource.data.disabled == false);
+            && request.resource.data.disabled == false
+            && request.resource.data.get('inviterUid', null) == null
+            && request.resource.data.get('uid', userId) == userId);
       allow delete: if isAdmin();
 
+      // 本人が編集できるのは以下のプロフィール項目のみ（role/status/disabled/inviterUid等は不可）
       allow update: if isActive() && (
-        // admin は全項目変更可
         isAdmin()
-        // 本人：role と disabled を変えなければ可（声かけ者 inviterUid は除外＝editor専用）
         || (request.auth.uid == userId
-            && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'disabled', 'inviterUid']))
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                 'name','nameKana','sei','mei','seiKana','meiKana',
+                 'companyName','title','aspiration','businessContent',
+                 'companies','industries','introducerUid','photoURL'
+               ]))
         // editor：他人の声かけ者(inviterUid)のみ設定可
         || (isEditor()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['inviterUid']))
@@ -57,10 +62,14 @@ service cloud.firestore {
     }
 
     // ── events ─────────────────────────────────────────────
-    // 閲覧：会員全員／作成・編集・削除：editor 以上
+    // 閲覧：会員全員／作成・削除・編集：editor 以上
+    // 例外：参加人数の集計(summary)フィールドのみ、会員も更新可（出欠登録時の自動集計用）
     match /events/{eventId} {
       allow read: if isActive();
-      allow create, update, delete: if isEditor();
+      allow create, delete: if isEditor();
+      allow update: if isEditor()
+        || (isActive()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['summary']));
 
       // 出欠サブコレクション
       //   本人：自分の status 等を登録可
