@@ -18,5 +18,7 @@ export const firebaseConfig = {
 
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+// 認証メール（確認メール・パスワード再設定）を日本語で送信
+auth.languageCode = 'ja';
 export const db = getFirestore(app);
 export const storage = getStorage(app);
