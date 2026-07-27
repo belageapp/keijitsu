@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex">
 <title>プロフィール｜経営実践研究会 広島会員 情報共有アプリ</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
 <link rel="stylesheet" href="style.css">
 <style>
   .prof-head{padding:24px;margin-bottom:16px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
@@ -91,6 +93,48 @@
   </div>
 </div>
 
+<!-- 顔写真の登録モーダル -->
+<div class="modal-ov" id="photoModal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-title">顔写真の登録</div>
+
+    <!-- 選択画面 -->
+    <div id="photo-choose">
+      <p style="font-size:13px;color:var(--ink-mid);margin-bottom:16px;line-height:1.7">写真を選ぶか、カメラで撮影してください。次の画面で丸く切り抜けます。</p>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-outline" id="pickFileBtn" style="padding:14px">📁 画像を選ぶ</button>
+        <button class="btn btn-outline" id="startCamBtn" style="padding:14px">📷 カメラで撮影</button>
+      </div>
+      <input type="file" id="photoFile" accept="image/*" style="display:none">
+    </div>
+
+    <!-- カメラ画面 -->
+    <div id="photo-camera" style="display:none">
+      <div style="background:#000;border-radius:12px;overflow:hidden;margin-bottom:12px">
+        <video id="cam-video" autoplay playsinline muted style="width:100%;display:block;max-height:60vh;object-fit:contain"></video>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button class="btn btn-primary" id="cam-shot">📷 撮影する</button>
+        <button class="btn btn-outline" id="cam-flip">↺ 切替</button>
+        <button class="btn btn-outline" id="cam-back">戻る</button>
+      </div>
+    </div>
+
+    <!-- トリミング画面 -->
+    <div id="photo-crop" style="display:none">
+      <div style="max-height:60vh;overflow:hidden;background:#f0f0f0;border-radius:12px"><img id="crop-img" style="max-width:100%;display:block"></div>
+      <p style="font-size:11px;color:var(--ink-light);margin-top:8px;text-align:center">ドラッグで移動・つまんで拡大縮小できます</p>
+      <div class="modal-btns">
+        <button class="btn btn-outline" id="crop-back">やり直す</button>
+        <button class="btn btn-primary" id="crop-save">この写真に決定</button>
+      </div>
+    </div>
+
+    <div id="photo-status" style="font-size:12px;color:var(--gold-dark);margin-top:10px;text-align:center"></div>
+    <div class="modal-btns" id="photo-close-row"><button class="btn btn-outline" id="photoCancel">閉じる</button></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script type="module">
@@ -151,7 +195,7 @@
     document.getElementById('content').innerHTML = `
       <div class="card prof-head">
         <div class="prof-avatar">${avatar}
-          ${editableSelf ? '<label style="position:absolute;bottom:0;right:0;background:var(--gold);color:#fff;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px">📷<input type="file" id="photoInput" accept="image/*" style="display:none"></label>' : ''}
+          ${editableSelf ? '<button id="photoBtn" title="写真を登録" style="position:absolute;bottom:0;right:0;background:var(--gold);color:#fff;border:2px solid #fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;padding:0">📷</button>' : ''}
         </div>
         <div style="flex:1;min-width:0">
           ${user.nameKana ? `<div style="font-size:11px;color:var(--ink-light)">${esc(user.nameKana)}</div>` : ''}
@@ -207,8 +251,8 @@
     if (editableSelf) {
       document.getElementById('editBtn').onclick = openEditModal;
       document.getElementById('editIntroducer').onclick = () => openRelModal('introducerUid', '紹介者', true);
-      const pi = document.getElementById('photoInput');
-      if (pi) pi.onchange = uploadPhoto;
+      const pb = document.getElementById('photoBtn');
+      if (pb) pb.onclick = openPhotoModal;
     }
     if (editableRel) {
       document.getElementById('editInviter').onclick = () => openRelModal('inviterUid', '声かけ者', false);
@@ -326,45 +370,104 @@
     } catch (e) { showToast('エラー：' + e.message); }
   };
 
-  // ── 顔写真アップロード ──
-  // 画像をブラウザ内で縮小（最大辺600px・JPEG）してからアップロード
-  function resizeImage(file, maxDim = 600, quality = 0.85) {
-    return new Promise((resolve, reject) => {
-      const url = URL.createObjectURL(file);
-      const img = new Image();
-      img.onload = () => {
-        URL.revokeObjectURL(url);
-        let { width, height } = img;
-        if (width >= height && width > maxDim) { height = Math.round(height * maxDim / width); width = maxDim; }
-        else if (height > maxDim) { width = Math.round(width * maxDim / height); height = maxDim; }
-        const canvas = document.createElement('canvas');
-        canvas.width = width; canvas.height = height;
-        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-        canvas.toBlob(b => b ? resolve(b) : reject(new Error('画像の変換に失敗しました')), 'image/jpeg', quality);
-      };
-      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('画像を読み込めませんでした（HEIC形式などは非対応の場合があります）')); };
-      img.src = url;
-    });
+  // ── 顔写真：ファイル選択／カメラ撮影／トリミング／アップロード ──
+  const photoModal = document.getElementById('photoModal');
+  let cropper = null;
+  let camStream = null;
+  let camFacing = 'user';
+
+  function showPhotoView(which) {
+    document.getElementById('photo-choose').style.display = which === 'choose' ? 'block' : 'none';
+    document.getElementById('photo-camera').style.display = which === 'camera' ? 'block' : 'none';
+    document.getElementById('photo-crop').style.display   = which === 'crop'   ? 'block' : 'none';
+  }
+  function stopCamera() {
+    if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+  }
+  function destroyCropper() {
+    if (cropper) { cropper.destroy(); cropper = null; }
   }
 
-  async function uploadPhoto(e) {
+  function openPhotoModal() {
+    document.getElementById('photo-status').textContent = '';
+    showPhotoView('choose');
+    photoModal.classList.add('open');
+  }
+  function closePhotoModal() {
+    stopCamera(); destroyCropper();
+    photoModal.classList.remove('open');
+  }
+  document.getElementById('photoCancel').onclick = closePhotoModal;
+
+  // 画像を選ぶ
+  document.getElementById('pickFileBtn').onclick = () => document.getElementById('photoFile').click();
+  document.getElementById('photoFile').onchange = (e) => {
     const file = e.target.files[0]; if (!file) return;
+    loadIntoCropper(URL.createObjectURL(file));
+    e.target.value = '';
+  };
+
+  // カメラ起動
+  document.getElementById('startCamBtn').onclick = () => startCamera();
+  async function startCamera() {
     try {
-      showToast('画像を処理中...');
-      const blob = await resizeImage(file);   // どんな大きさの写真でも縮小してから送る
-      showToast('アップロード中...');
-      const path = `users/${targetUid}/photo_${Date.now()}.jpg`;
-      const sref = ref(storage, path);
-      await uploadBytes(sref, blob, { contentType: 'image/jpeg' });
-      const url = await getDownloadURL(sref);
-      await updateDoc(doc(db, 'users', targetUid), { photoURL: url });
-      user.photoURL = url; render();
-      showToast('写真を更新しました');
+      stopCamera();
+      camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: camFacing }, audio: false });
+      document.getElementById('cam-video').srcObject = camStream;
+      showPhotoView('camera');
     } catch (err) {
-      console.error('photo upload error', err);
-      showToast('アップロード失敗：' + (err.code || err.message));
+      showToast('カメラを起動できません：' + (err.name || err.message));
     }
   }
+  document.getElementById('cam-flip').onclick = () => { camFacing = camFacing === 'user' ? 'environment' : 'user'; startCamera(); };
+  document.getElementById('cam-back').onclick = () => { stopCamera(); showPhotoView('choose'); };
+  document.getElementById('cam-shot').onclick = () => {
+    const video = document.getElementById('cam-video');
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    stopCamera();
+    loadIntoCropper(dataUrl);
+  };
+
+  // トリミング画面へ
+  function loadIntoCropper(src) {
+    destroyCropper();
+    const img = document.getElementById('crop-img');
+    img.onload = () => {
+      cropper = new Cropper(img, {
+        aspectRatio: 1, viewMode: 1, dragMode: 'move',
+        autoCropArea: 1, background: false, movable: true, zoomable: true,
+      });
+    };
+    img.src = src;
+    showPhotoView('crop');
+  }
+  document.getElementById('crop-back').onclick = () => { destroyCropper(); showPhotoView('choose'); };
+
+  // 決定 → 600px正方形にトリミングしてアップロード
+  document.getElementById('crop-save').onclick = async () => {
+    if (!cropper) return;
+    const canvas = cropper.getCroppedCanvas({ width: 600, height: 600, imageSmoothingQuality: 'high' });
+    const status = document.getElementById('photo-status');
+    status.textContent = 'アップロード中...';
+    canvas.toBlob(async (blob) => {
+      try {
+        const path = `users/${targetUid}/photo_${Date.now()}.jpg`;
+        const sref = ref(storage, path);
+        await uploadBytes(sref, blob, { contentType: 'image/jpeg' });
+        const url = await getDownloadURL(sref);
+        await updateDoc(doc(db, 'users', targetUid), { photoURL: url });
+        user.photoURL = url;
+        closePhotoModal(); render();
+        showToast('写真を更新しました');
+      } catch (err) {
+        console.error('photo upload error', err);
+        status.textContent = 'アップロード失敗：' + (err.code || err.message);
+      }
+    }, 'image/jpeg', 0.85);
+  };
 
   function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 </script>
