@@ -44,6 +44,34 @@
   .attach-file{display:flex;flex-direction:column;align-items:center;justify-content:center;height:110px;font-size:12px;color:var(--ink-mid);text-align:center;padding:8px}
   .attach-name{font-size:10px;color:var(--ink-mid);padding:5px 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .attach-del{position:absolute;top:4px;right:4px;background:rgba(58,52,43,.7);color:#fff;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:12px;line-height:1}
+  /* タブ */
+  .ev-tabs{display:flex;gap:2px;border-bottom:2px solid var(--border);margin-bottom:16px;overflow-x:auto}
+  .ev-tab{padding:10px 16px;font-size:13px;font-weight:700;color:var(--ink-mid);cursor:pointer;border:none;border-bottom:3px solid transparent;white-space:nowrap;background:none;font-family:inherit}
+  .ev-tab.active{color:var(--indigo);border-bottom-color:var(--indigo)}
+  /* 出欠セグメント */
+  .att-field{margin-bottom:16px}
+  .att-field > label{display:block;font-size:12px;font-weight:800;color:var(--ink-mid);margin-bottom:6px}
+  .att-seg{display:flex;gap:6px}
+  .att-seg label{flex:1;cursor:pointer}
+  .att-seg input{display:none}
+  .att-seg span{display:block;text-align:center;padding:9px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-weight:700;color:var(--ink-mid)}
+  .att-seg input:checked + span.s-attending{background:var(--green);border-color:var(--green);color:#fff}
+  .att-seg input:checked + span.s-undecided{background:var(--ink-light);border-color:var(--ink-light);color:#fff}
+  .att-seg input:checked + span.s-absent{background:var(--red);border-color:var(--red);color:#fff}
+  /* ゲスト/社員カード */
+  .pcard{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;background:#FBFDFF}
+  .pcard .pc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .pcard input,.pcard select,.pcard textarea{width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:#fff;margin-bottom:8px}
+  .pcard textarea{min-height:52px;resize:vertical}
+  .chk{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--ink-mid);margin-right:14px;cursor:pointer}
+  .chk input{width:15px;height:15px;margin:0}
+  .pc-del{background:#fff;border:1.5px solid #E4C4C0;color:var(--red);font-size:11px;font-weight:700;cursor:pointer;padding:3px 10px;border-radius:7px}
+  /* 参加状況 */
+  .pstat-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;flex-wrap:wrap}
+  .pstat-row:last-child{border-bottom:none}
+  .pill-settled{font-size:10px;font-weight:700;padding:1px 7px;border-radius:9px;background:#E7F1EA;color:#2E7A54}
+  .pill-guest{font-size:10px;font-weight:700;padding:1px 7px;border-radius:9px;background:#FBF0E1;color:#B0742A}
+  .pill-emp{font-size:10px;font-weight:700;padding:1px 7px;border-radius:9px;background:#EAF0F6;color:#3A5A7A}
 </style>
 </head>
 <body>
@@ -65,6 +93,7 @@
     <div class="field"><label>開催場所</label><input id="ee-location"></div>
     <div class="field"><label>内容・概要</label><textarea id="ee-desc"></textarea></div>
     <div class="field"><label>役割分担表（GoogleスプレッドシートURL）</label><input id="ee-sheet" placeholder="https://docs.google.com/spreadsheets/..."><div class="hint">「リンクを知っている全員が閲覧可」または「ウェブに公開」で埋め込み表示されます。特定のタブを表示したい場合は、そのタブを開いた状態のURL（末尾 #gid=…）を貼り付けてください。</div></div>
+    <div class="field"><label>K-PORTAL 決済URL（本部決済サイト）</label><input id="ee-kportal" placeholder="https://..."><div class="hint">イベントごとの本部決済ページのURL。出欠タブに決済ボタンとして表示されます。</div></div>
     <div class="modal-btns">
       <button class="btn btn-outline" id="eeCancel">キャンセル</button>
       <button class="btn btn-primary" id="eeSave">保存する</button>
@@ -112,7 +141,7 @@
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
   import { db, storage } from './firebase-config.js';
   import { requireAuth, renderTopbar, canEdit } from './auth.js';
-  import { EVENT_TYPES, eventTypeBadge } from './constants.js';
+  import { EVENT_TYPES, eventTypeBadge, INDUSTRIES, industryBadge } from './constants.js';
 
   // 種別セレクトを構築
   document.getElementById('ee-type').innerHTML =
@@ -120,6 +149,8 @@
 
   const eventId = new URLSearchParams(location.search).get('id');
   let me = null, ev = null, members = [], memberMap = {}, attendance = [];
+  let currentTab = 'overview';
+  const industryOptions = (sel) => '<option value="">業種を選択</option>' + INDUSTRIES.map(i => `<option value="${i}"${i===sel?' selected':''}>${i}</option>`).join('');
 
   const WD = ['日','月','火','水','木','金','土'];
   function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -182,6 +213,8 @@
       members = memSnap.docs.map(d => ({ uid: d.id, ...d.data() })).filter(m => !m.disabled);
       memberMap = {}; members.forEach(m => memberMap[m.uid] = m);
       attendance = attSnap.docs.map(d => ({ uid: d.id, ...d.data() }));
+      // 旧形式(status)を main に正規化
+      attendance.forEach(a => { if (a.main === undefined && a.status) a.main = a.status; });
       render();
     } catch (e) {
       document.getElementById('content').innerHTML = `<div class="empty" style="color:var(--red)">読み込みエラー：${e.message}</div>`;
@@ -198,15 +231,13 @@
 
   function render() {
     const editable = canEdit(me);
-    const mine = myAttendance();
-    const groups = {
-      attending: attendance.filter(a => a.status === 'attending'),
-      absent:    attendance.filter(a => a.status === 'absent'),
-      undecided: attendance.filter(a => a.status === 'undecided'),
-    };
-
+    const TABS = [
+      { key:'overview', label:'概要' },
+      { key:'attendance', label:'出欠' },
+      { key:'roles', label:'役割' },
+      { key:'files', label:'資料' },
+    ];
     document.getElementById('content').innerHTML = `
-      <!-- ヒーロー -->
       <div class="card ev-hero">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
           <div>
@@ -220,86 +251,234 @@
         </div>
         <div class="meta-row">🗓 ${fmtDateTime(ev.startAt)}${ev.endAt ? ' 〜 ' + fmtDateTime(ev.endAt).split(') ')[1] : ''}</div>
         ${ev.location ? `<div class="meta-row">📍 ${esc(ev.location)}</div>` : ''}
-        ${ev.description ? `<div class="desc">${esc(ev.description)}</div>` : ''}
       </div>
-
-      <!-- 自分の出欠 -->
-      <div class="card sec">
-        <div class="sec-title"><span class="ico">✋</span>あなたの出欠</div>
-        <div class="att-buttons">
-          <button class="att-btn ${mine?.status==='attending'?'sel-attending':''}" data-s="attending">出席</button>
-          <button class="att-btn ${mine?.status==='undecided'?'sel-undecided':''}" data-s="undecided">未定</button>
-          <button class="att-btn ${mine?.status==='absent'?'sel-absent':''}" data-s="absent">欠席</button>
-        </div>
+      <div class="ev-tabs">
+        ${TABS.map(t => `<button class="ev-tab ${t.key===currentTab?'active':''}" data-tab="${t.key}">${t.label}</button>`).join('')}
       </div>
-
-      <!-- 出欠一覧 -->
-      <div class="card sec">
-        <div class="sec-title"><span class="ico">👥</span>出欠状況（出席 ${groups.attending.length}名）</div>
-        ${attGroupHtml('出席', groups.attending, 'badge-green', editable)}
-        ${attGroupHtml('未定', groups.undecided, 'badge-gray', editable)}
-        ${attGroupHtml('欠席', groups.absent, 'badge-red', editable)}
-        ${attendance.length === 0 ? '<div style="font-size:13px;color:var(--ink-light)">まだ出欠の回答がありません</div>' : ''}
-      </div>
-
-      <!-- 役割 -->
-      <div class="card sec">
-        <div class="sec-head">
-          <div class="sec-title"><span class="ico">🎯</span>役割</div>
-          ${editable ? '<button class="btn btn-outline btn-sm" id="addRoleBtn">＋ 役割を追加</button>' : ''}
-        </div>
-        ${(ev.roles && ev.roles.length) ? ev.roles.map((r, i) => `
-          <div class="role-row">
-            <span class="role-name">${esc(r.roleName)}</span>
-            <span class="role-people">${(r.userIds||[]).map(uid => esc(memberMap[uid]?.name || '?')).join('、') || '<span style="color:var(--ink-light)">未割当</span>'}</span>
-            ${editable ? `<button class="btn btn-danger btn-sm" data-delrole="${i}">削除</button>` : ''}
-          </div>`).join('') : '<div style="font-size:13px;color:var(--ink-light)">アプリ上の役割はまだ設定されていません</div>'}
-
-        ${ev.roleSheetUrl ? `
-          <div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--border)">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-              <span style="font-size:13px;font-weight:700;color:var(--ink-mid)">📊 役割分担表（スプレッドシート）</span>
-              <a href="${escAttr(sheetEditUrl(ev.roleSheetUrl))}" target="_blank" rel="noopener" class="btn btn-primary btn-sm" style="text-decoration:none">✏️ Googleで編集 ↗</a>
-            </div>
-            <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">
-              <iframe src="${escAttr(sheetEmbedUrl(ev.roleSheetUrl))}" style="width:100%;height:420px;border:0" loading="lazy"></iframe>
-            </div>
-            <div style="font-size:11px;color:var(--ink-light);margin-top:6px">※ 上の埋め込みは閲覧用です。編集は「Googleで編集」から行ってください（編集権限のある方のみ）。特定のタブを表示したい場合は、そのタブを開いた状態のURL（末尾に #gid=… が付いたもの）を登録してください。</div>
-          </div>` : ''}
-      </div>
-
-      <!-- 添付 -->
-      <div class="card sec">
-        <div class="sec-head">
-          <div class="sec-title"><span class="ico">📎</span>チラシ・資料</div>
-          ${editable ? '<label class="btn btn-outline btn-sm" style="cursor:pointer">＋ 添付<input type="file" id="attachInput" accept="image/*,.pdf" multiple style="display:none"></label>' : ''}
-        </div>
-        <div class="attach-grid" id="attachGrid">
-          ${(ev.attachments && ev.attachments.length) ? ev.attachments.map((f, i) => attachHtml(f, i, editable)).join('') : '<div style="font-size:13px;color:var(--ink-light)">添付はありません</div>'}
-        </div>
-        <div id="uploadStatus" style="font-size:12px;color:var(--gold-dark);margin-top:8px"></div>
-      </div>
+      <div id="tab-panel"></div>
     `;
-
-    bindEvents(editable);
+    if (editable) {
+      document.getElementById('editEvBtn').onclick = openEditModal;
+      document.getElementById('delEvBtn').onclick = deleteEvent;
+    }
+    document.querySelectorAll('.ev-tab').forEach(b => b.onclick = () => { currentTab = b.dataset.tab; render(); });
+    renderTabPanel(editable);
   }
 
-  function attGroupHtml(label, list, badgeCls, editable) {
-    if (!list.length) return '';
-    return `<div class="att-group">
-      <div class="att-group-label"><span class="badge ${badgeCls}">${label} ${list.length}</span></div>
-      <div class="att-chips">
-        ${list.map(a => {
-          const m = memberMap[a.uid];
-          const inv = effectiveInviter(a.uid);
-          return `<span class="att-chip">
-            <a href="profile.html?uid=${a.uid}">${esc(m?.name || '不明')}</a>
-            ${inv ? `<span class="inviter">声かけ:${esc(inv)}</span>` : ''}
-            ${editable ? `<button class="btn-logout" style="padding:1px 6px;font-size:10px" data-inviter="${a.uid}">声かけ者</button>` : ''}
-          </span>`;
-        }).join('')}
+  function renderTabPanel(editable) {
+    const panel = document.getElementById('tab-panel');
+    if (currentTab === 'overview') panel.innerHTML = overviewHtml();
+    else if (currentTab === 'attendance') { panel.innerHTML = attendanceHtml(editable); bindAttendance(editable); }
+    else if (currentTab === 'roles') { panel.innerHTML = rolesHtml(editable); bindRoles(editable); }
+    else if (currentTab === 'files') { panel.innerHTML = filesHtml(editable); bindFiles(editable); }
+  }
+
+  // ── 概要タブ ──
+  function overviewHtml() {
+    return `<div class="card sec">
+      <div class="meta-row" style="margin-bottom:8px">🗓 ${fmtDateTime(ev.startAt)}${ev.endAt ? ' 〜 ' + fmtDateTime(ev.endAt) : ''}</div>
+      ${ev.location ? `<div class="meta-row" style="margin-bottom:8px">📍 ${esc(ev.location)}</div>` : ''}
+      ${ev.description ? `<div class="desc">${esc(ev.description)}</div>` : '<div style="font-size:13px;color:var(--ink-light)">内容は未入力です</div>'}
+    </div>`;
+  }
+
+  // ── 出欠タブ ──
+  function segHtml(name, val) {
+    const opt = (v, cls, label) => `<label><input type="radio" name="${name}" value="${v}" ${val===v?'checked':''}><span class="${cls}">${label}</span></label>`;
+    return `<div class="att-seg">${opt('attending','s-attending','出席')}${opt('undecided','s-undecided','未定')}${opt('absent','s-absent','欠席')}</div>`;
+  }
+  function guestCardHtml(g = {}) {
+    return `<div class="pcard guest-card">
+      <div class="pc-head"><span style="font-size:12px;font-weight:800;color:var(--ink-mid)">👤 ゲスト</span><button type="button" class="pc-del">✕ 削除</button></div>
+      <input class="g-name" placeholder="お名前" value="${escAttr(g.name)}">
+      <input class="g-company" placeholder="社名" value="${escAttr(g.company)}">
+      <select class="g-industry">${industryOptions(g.industry)}</select>
+      <textarea class="g-detail" placeholder="詳細情報（役職・事業・紹介したい点など）">${esc(g.detail || '')}</textarea>
+      <textarea class="g-sites" placeholder="会社サイトURL（複数は改行で入力）">${esc((g.sites || []).join('\n'))}</textarea>
+      <input class="g-facebook" placeholder="Facebook URL" value="${escAttr(g.facebook)}">
+      <div>
+        <label class="chk"><input type="checkbox" class="g-main" ${g.joinMain?'checked':''}>本会</label>
+        <label class="chk"><input type="checkbox" class="g-social" ${g.joinSocial?'checked':''}>懇親会</label>
+        <label class="chk"><input type="checkbox" class="g-settled" ${g.settled?'checked':''}>決済済</label>
       </div>
     </div>`;
+  }
+  function empCardHtml(em = {}) {
+    return `<div class="pcard emp-card">
+      <div class="pc-head"><span style="font-size:12px;font-weight:800;color:var(--ink-mid)">👥 社員</span><button type="button" class="pc-del">✕ 削除</button></div>
+      <input class="em-name" placeholder="お名前" value="${escAttr(em.name)}">
+      <div>
+        <label class="chk"><input type="checkbox" class="em-main" ${em.joinMain?'checked':''}>本会</label>
+        <label class="chk"><input type="checkbox" class="em-social" ${em.joinSocial?'checked':''}>懇親会</label>
+        <label class="chk"><input type="checkbox" class="em-settled" ${em.settled?'checked':''}>決済済</label>
+      </div>
+    </div>`;
+  }
+  function attendanceHtml(editable) {
+    const mine = myAttendance() || {};
+    const guests = mine.guests || [];
+    const emps = mine.employees || [];
+    return `
+      <div class="card sec">
+        <div class="sec-title"><span class="ico">✋</span>あなたの参加登録</div>
+        <div class="att-field"><label>本会 出欠</label>${segHtml('main', mine.main || '')}</div>
+        <div class="att-field"><label>懇親会 出欠</label>${segHtml('social', mine.social || '')}</div>
+        ${ev.kportalUrl ? `<div class="att-field"><a href="${escAttr(ev.kportalUrl)}" target="_blank" rel="noopener" class="btn btn-primary btn-sm" style="text-decoration:none">💳 K-PORTALで決済する ↗</a></div>` : ''}
+        <div class="att-field"><label class="chk" style="font-size:13px"><input type="checkbox" id="my-settled" ${mine.settled?'checked':''}>本部決済システムで決済済</label></div>
+
+        <div class="att-field">
+          <label>ゲスト（社外の方）</label>
+          <div id="guests-list">${guests.map(guestCardHtml).join('')}</div>
+          <button type="button" class="btn btn-outline btn-sm" id="addGuestBtn">＋ ゲストを追加</button>
+        </div>
+        <div class="att-field">
+          <label>社員参加（自社の方）</label>
+          <div id="emps-list">${emps.map(empCardHtml).join('')}</div>
+          <button type="button" class="btn btn-outline btn-sm" id="addEmpBtn">＋ 社員を追加</button>
+        </div>
+        <button class="btn btn-primary" id="saveAttBtn" style="width:100%;margin-top:6px">参加登録を保存する</button>
+      </div>
+
+      ${participationStatusHtml(editable)}
+    `;
+  }
+
+  // 本会・懇親会それぞれの参加者を集計
+  function participantsFor(kind) {
+    // kind: 'main' | 'social'
+    const list = [];
+    attendance.forEach(a => {
+      const m = memberMap[a.uid];
+      const self = kind === 'main' ? a.main : a.social;
+      if (self === 'attending') list.push({ label: m?.name || '不明', kind:'member', uid:a.uid, settled:a.settled, inviter: effectiveInviter(a.uid) });
+      (a.guests || []).forEach(g => { if (kind==='main' ? g.joinMain : g.joinSocial) list.push({ label: g.name || 'ゲスト', kind:'guest', by:m?.name, company:g.company, settled:g.settled }); });
+      (a.employees || []).forEach(e => { if (kind==='main' ? e.joinMain : e.joinSocial) list.push({ label: e.name || '社員', kind:'emp', by:m?.name, settled:e.settled }); });
+    });
+    return list;
+  }
+  function pstatRowHtml(p, editable) {
+    const tag = p.kind==='guest' ? `<span class="pill-guest">ゲスト</span>` : p.kind==='emp' ? `<span class="pill-emp">社員</span>` : '';
+    const by = p.by ? `<span style="font-size:11px;color:var(--ink-light)">（${esc(p.by)}）</span>` : '';
+    const name = p.kind==='member' ? `<a href="profile.html?uid=${p.uid}" style="font-weight:600">${esc(p.label)}</a>` : `<span style="font-weight:600">${esc(p.label)}</span>`;
+    const company = p.company ? `<span style="font-size:11px;color:var(--ink-mid)">${esc(p.company)}</span>` : '';
+    const settled = p.settled ? `<span class="pill-settled">決済済</span>` : '';
+    const inv = p.inviter ? `<span style="font-size:10px;color:var(--ink-light)">声かけ:${esc(p.inviter)}</span>` : '';
+    const invBtn = (editable && p.kind==='member') ? `<button class="btn-logout" style="padding:1px 6px;font-size:10px" data-inviter="${p.uid}">声かけ者</button>` : '';
+    return `<div class="pstat-row">${tag}${name}${by}${company}${settled}${inv}${invBtn}</div>`;
+  }
+  function participationStatusHtml(editable) {
+    const mainList = participantsFor('main');
+    const socialList = participantsFor('social');
+    const block = (title, list) => `
+      <div class="card sec">
+        <div class="sec-title"><span class="ico">👥</span>${title}（${list.length}名）</div>
+        ${list.length ? list.map(p => pstatRowHtml(p, editable)).join('') : '<div style="font-size:13px;color:var(--ink-light)">まだ参加者がいません</div>'}
+      </div>`;
+    return block('本会 参加者', mainList) + block('懇親会 参加者', socialList);
+  }
+
+  function bindAttendance(editable) {
+    document.getElementById('addGuestBtn').onclick = () => { document.getElementById('guests-list').insertAdjacentHTML('beforeend', guestCardHtml({})); bindPcardDeletes(); };
+    document.getElementById('addEmpBtn').onclick = () => { document.getElementById('emps-list').insertAdjacentHTML('beforeend', empCardHtml({})); bindPcardDeletes(); };
+    document.getElementById('saveAttBtn').onclick = saveMyParticipation;
+    bindPcardDeletes();
+    if (editable) document.querySelectorAll('#tab-panel [data-inviter]').forEach(b => b.onclick = () => openInviterModal(b.dataset.inviter));
+  }
+  function bindPcardDeletes() {
+    document.querySelectorAll('#tab-panel .pc-del').forEach(b => b.onclick = (e) => e.target.closest('.pcard').remove());
+  }
+  function collectGuests() {
+    return [...document.querySelectorAll('#guests-list .guest-card')].map(el => ({
+      name: el.querySelector('.g-name').value.trim(),
+      company: el.querySelector('.g-company').value.trim(),
+      industry: el.querySelector('.g-industry').value,
+      detail: el.querySelector('.g-detail').value.trim(),
+      sites: el.querySelector('.g-sites').value.split(/\n+/).map(s=>s.trim()).filter(Boolean),
+      facebook: el.querySelector('.g-facebook').value.trim(),
+      joinMain: el.querySelector('.g-main').checked,
+      joinSocial: el.querySelector('.g-social').checked,
+      settled: el.querySelector('.g-settled').checked,
+    })).filter(g => g.name || g.company);
+  }
+  function collectEmployees() {
+    return [...document.querySelectorAll('#emps-list .emp-card')].map(el => ({
+      name: el.querySelector('.em-name').value.trim(),
+      joinMain: el.querySelector('.em-main').checked,
+      joinSocial: el.querySelector('.em-social').checked,
+      settled: el.querySelector('.em-settled').checked,
+    })).filter(e => e.name);
+  }
+  async function saveMyParticipation() {
+    const data = {
+      main: document.querySelector('input[name="main"]:checked')?.value || null,
+      social: document.querySelector('input[name="social"]:checked')?.value || null,
+      settled: document.getElementById('my-settled').checked,
+      guests: collectGuests(),
+      employees: collectEmployees(),
+      respondedAt: serverTimestamp(),
+    };
+    const btn = document.getElementById('saveAttBtn');
+    btn.disabled = true; btn.textContent = '保存中...';
+    try {
+      await setDoc(doc(db, 'events', eventId, 'attendance', me.uid), data, { merge: true });
+      const ex = attendance.find(a => a.uid === me.uid);
+      if (ex) Object.assign(ex, data); else attendance.push({ uid: me.uid, ...data });
+      render();
+      showToast('参加登録を保存しました');
+    } catch (e) { showToast('エラー：' + e.message); btn.disabled = false; btn.textContent = '参加登録を保存する'; }
+  }
+
+  // ── 役割タブ ──
+  function rolesHtml(editable) {
+    return `<div class="card sec">
+      <div class="sec-head">
+        <div class="sec-title"><span class="ico">🎯</span>役割</div>
+        ${editable ? '<button class="btn btn-outline btn-sm" id="addRoleBtn">＋ 役割を追加</button>' : ''}
+      </div>
+      ${(ev.roles && ev.roles.length) ? ev.roles.map((r, i) => `
+        <div class="role-row">
+          <span class="role-name">${esc(r.roleName)}</span>
+          <span class="role-people">${(r.userIds||[]).map(uid => esc(memberMap[uid]?.name || '?')).join('、') || '<span style="color:var(--ink-light)">未割当</span>'}</span>
+          ${editable ? `<button class="btn btn-danger btn-sm" data-delrole="${i}">削除</button>` : ''}
+        </div>`).join('') : '<div style="font-size:13px;color:var(--ink-light)">アプリ上の役割はまだ設定されていません</div>'}
+      ${ev.roleSheetUrl ? `
+        <div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--border)">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+            <span style="font-size:13px;font-weight:700;color:var(--ink-mid)">📊 役割分担表（スプレッドシート）</span>
+            <a href="${escAttr(sheetEditUrl(ev.roleSheetUrl))}" target="_blank" rel="noopener" class="btn btn-primary btn-sm" style="text-decoration:none">✏️ Googleで編集 ↗</a>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">
+            <iframe src="${escAttr(sheetEmbedUrl(ev.roleSheetUrl))}" style="width:100%;height:420px;border:0" loading="lazy"></iframe>
+          </div>
+          <div style="font-size:11px;color:var(--ink-light);margin-top:6px">※ 上の埋め込みは閲覧用です。編集は「Googleで編集」から行ってください。特定タブは末尾 #gid=… のURLで指定できます。</div>
+        </div>` : ''}
+    </div>`;
+  }
+  function bindRoles(editable) {
+    if (!editable) return;
+    document.getElementById('addRoleBtn').onclick = openRoleModal;
+    document.querySelectorAll('[data-delrole]').forEach(b => b.onclick = () => deleteRole(+b.dataset.delrole));
+  }
+
+  // ── 資料タブ ──
+  function filesHtml(editable) {
+    return `<div class="card sec">
+      <div class="sec-head">
+        <div class="sec-title"><span class="ico">📎</span>チラシ・資料</div>
+        ${editable ? '<label class="btn btn-outline btn-sm" style="cursor:pointer">＋ 添付<input type="file" id="attachInput" accept="image/*,.pdf" multiple style="display:none"></label>' : ''}
+      </div>
+      <div class="attach-grid" id="attachGrid">
+        ${(ev.attachments && ev.attachments.length) ? ev.attachments.map((f, i) => attachHtml(f, i, editable)).join('') : '<div style="font-size:13px;color:var(--ink-light)">添付はありません</div>'}
+      </div>
+      <div id="uploadStatus" style="font-size:12px;color:var(--gold-dark);margin-top:8px"></div>
+    </div>`;
+  }
+  function bindFiles(editable) {
+    if (editable) {
+      const ai = document.getElementById('attachInput');
+      if (ai) ai.onchange = uploadAttach;
+    }
+    document.querySelectorAll('[data-delattach]').forEach(b => b.onclick = () => deleteAttach(+b.dataset.delattach));
   }
 
   function attachHtml(f, i, editable) {
@@ -311,22 +490,6 @@
         : `<a class="attach-file" href="${f.url}" target="_blank">📄<div class="attach-name">${esc(f.name)}</div></a>`}
       ${isImg ? `<div class="attach-name">${esc(f.name)}</div>` : ''}
     </div>`;
-  }
-
-  function bindEvents(editable) {
-    // 自分の出欠
-    document.querySelectorAll('.att-btn').forEach(b => b.onclick = () => setMyAttendance(b.dataset.s));
-
-    if (editable) {
-      document.getElementById('editEvBtn').onclick = openEditModal;
-      document.getElementById('delEvBtn').onclick = deleteEvent;
-      document.getElementById('addRoleBtn').onclick = openRoleModal;
-      document.querySelectorAll('[data-delrole]').forEach(b => b.onclick = () => deleteRole(+b.dataset.delrole));
-      document.querySelectorAll('[data-inviter]').forEach(b => b.onclick = () => openInviterModal(b.dataset.inviter));
-      document.querySelectorAll('[data-delattach]').forEach(b => b.onclick = () => deleteAttach(+b.dataset.delattach));
-      const ai = document.getElementById('attachInput');
-      if (ai) ai.onchange = uploadAttach;
-    }
   }
 
   // ── イベント編集 ──
@@ -345,6 +508,7 @@
     document.getElementById('ee-location').value = ev.location || '';
     document.getElementById('ee-desc').value = ev.description || '';
     document.getElementById('ee-sheet').value = ev.roleSheetUrl || '';
+    document.getElementById('ee-kportal').value = ev.kportalUrl || '';
     evEditModal.classList.add('open');
   }
   document.getElementById('eeCancel').onclick = () => evEditModal.classList.remove('open');
@@ -362,6 +526,7 @@
         location: document.getElementById('ee-location').value.trim(),
         description: document.getElementById('ee-desc').value.trim(),
         roleSheetUrl: document.getElementById('ee-sheet').value.trim(),
+        kportalUrl: document.getElementById('ee-kportal').value.trim(),
         updatedAt: serverTimestamp(),
       };
       await updateDoc(doc(db, 'events', eventId), upd);
@@ -370,19 +535,6 @@
       showToast('保存しました');
     } catch (e) { showToast('エラー：' + e.message); }
   };
-
-  // ── 出欠 ──
-  async function setMyAttendance(status) {
-    try {
-      await setDoc(doc(db, 'events', eventId, 'attendance', me.uid), {
-        status, respondedAt: serverTimestamp(),
-      }, { merge: true });
-      const ex = attendance.find(a => a.uid === me.uid);
-      if (ex) ex.status = status; else attendance.push({ uid: me.uid, status });
-      render();
-      showToast(status === 'attending' ? '出席で登録しました' : status === 'absent' ? '欠席で登録しました' : '未定で登録しました');
-    } catch (e) { showToast('エラー：' + e.message); }
-  }
 
   // ── 役割 ──
   const roleModal = document.getElementById('roleModal');
