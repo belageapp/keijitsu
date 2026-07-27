@@ -113,10 +113,18 @@
             <div class="mc-company">${esc(comps[0]?.name || '')}${comps.length>1?` 他${comps.length-1}社`:''}</div>
           </div>
         </div>
-        ${inds.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin:6px 0">${inds.map(industryBadge).join('')}</div>` : ''}
+        ${inds.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin:6px 0">${inds.map(i => `<span class="card-ind" data-ind="${esc(i)}" style="cursor:pointer">${industryBadge(i)}</span>`).join('')}</div>` : ''}
         ${m.aspiration ? `<div class="mc-aspiration">志：${esc(m.aspiration)}</div>` : ''}
       </div>`;
     }).join('')}</div>`;
+
+    // カード上の業種バッジをクリックで絞り込み（カード遷移は止める）
+    el.querySelectorAll('.card-ind').forEach(b => b.onclick = (e) => {
+      e.stopPropagation();
+      industryFilter = b.dataset.ind;
+      buildIndustryFilter(); apply();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   }
 
   document.getElementById('search').oninput = (e) => { kw = e.target.value.toLowerCase().trim(); apply(); };
