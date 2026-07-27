@@ -26,8 +26,8 @@ export const EVENT_TYPES = [
   'その他',
 ];
 
-// 動員目標・進捗バーを表示する種別（in広島の5種別のみ）
-export const MOBILIZATION_TYPES = ['特別講演in広島', '定例会in広島', '交流会in広島', '近未来in広島', 'オリエンin広島'];
+// 動員目標・進捗バーを表示する種別（この4種別のみ。オリエンin広島は対象外）
+export const MOBILIZATION_TYPES = ['特別講演in広島', '定例会in広島', '交流会in広島', '近未来in広島'];
 
 // 種別バッジの色（未指定は既定色）
 export const EVENT_TYPE_COLOR = {

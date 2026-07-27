@@ -185,10 +185,10 @@
   }
   function summaryLineHtml(ev){
     const isMob = MOBILIZATION_TYPES.includes(ev.eventType);
-    if(!isMob) return '';  // 動員人数は広島4種別のみ表示
     const sm = ev.summary;
     const goalMem = ev.goalMainMembers||0, goalGuest = ev.goalMainGuests||0;
-    if(!sm && !(goalMem||goalGuest)) return '';
+    // 人数(summary)が無く、動員バーも出ないなら非表示
+    if(!sm && !(isMob && (goalMem||goalGuest))) return '';
     const mem = sm?.main?.members||0, guest = sm?.main?.guests||0;
     return `<div style="margin-top:8px">
       <div style="display:flex;gap:12px;font-size:11px;color:var(--ink-mid);margin-bottom:4px;flex-wrap:wrap">
