@@ -45,3 +45,36 @@ export function eventTypeBadge(type) {
   const c = EVENT_TYPE_COLOR[type] || { bg:'#EFEDE8', color:'#6B6459' };
   return `<span style="display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;background:${c.bg};color:${c.color}">${type}</span>`;
 }
+
+// 業種（一般的な区分。追加・並べ替えはここを編集）
+export const INDUSTRIES = [
+  '製造業',
+  '建設業',
+  '不動産業',
+  '卸売・商社',
+  '小売業',
+  '飲食業',
+  '宿泊・観光',
+  '運輸・物流',
+  '情報通信・IT',
+  '金融・保険',
+  '医療・ヘルスケア',
+  '介護・福祉',
+  '教育・学習支援',
+  '農林水産業',
+  'エネルギー・電気・ガス',
+  '士業（法務・会計・労務等）',
+  'コンサルティング',
+  '広告・マーケティング',
+  'デザイン・クリエイティブ',
+  '美容・健康',
+  '人材・派遣',
+  '製薬・化学',
+  'サービス業',
+  'その他',
+];
+
+export function industryBadge(name) {
+  if (!name) return '';
+  return `<span style="display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:9px;background:#E4F1FB;color:#1C6BA8;border:1px solid #C7E0F2">${name}</span>`;
+}

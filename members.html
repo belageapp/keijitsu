@@ -27,7 +27,8 @@
     <div class="page-title"><span class="ico">👥</span>メンバー</div>
     <span class="badge badge-gray" id="count"></span>
   </div>
-  <div class="search-box"><input id="search" placeholder="🔍 氏名・会社名・事業内容で検索"></div>
+  <div class="search-box"><input id="search" placeholder="🔍 氏名・会社名・業種・事業内容・志で検索"></div>
+  <div id="industry-filter" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px"></div>
   <div id="grid"><div class="loading">読み込み中...</div></div>
 </div>
 
@@ -35,9 +36,21 @@
   import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
   import { db } from './firebase-config.js';
   import { requireAuth, renderTopbar } from './auth.js';
+  import { industryBadge } from './constants.js';
 
   let me = null, members = [];
+  let kw = '', industryFilter = '';
   function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+  // メンバーの会社配列を取得（旧 companyName 互換）
+  function companiesOf(m) {
+    if (Array.isArray(m.companies) && m.companies.length) return m.companies;
+    if (m.companyName) return [{ name: m.companyName, industry: '', title: m.title || '' }];
+    return [];
+  }
+  function industriesOf(m) {
+    return [...new Set(companiesOf(m).map(c => c.industry).filter(Boolean))];
+  }
 
   (async () => {
     me = await requireAuth();
@@ -50,12 +63,38 @@
       const snap = await getDocs(collection(db, 'users'));
       members = snap.docs.map(d => ({ uid: d.id, ...d.data() }))
         .filter(m => !m.disabled)
-        .sort((a,b) => (a.name||'').localeCompare(b.name||'', 'ja'));
+        .sort((a,b) => (a.nameKana||a.name||'').localeCompare(b.nameKana||b.name||'', 'ja'));
       document.getElementById('count').textContent = `${members.length}名`;
-      render(members);
+      buildIndustryFilter();
+      apply();
     } catch (e) {
       document.getElementById('grid').innerHTML = `<div class="empty" style="color:var(--red)">読み込みエラー：${e.message}</div>`;
     }
+  }
+
+  // 実際に使われている業種だけをバッジ絞り込みとして表示
+  function buildIndustryFilter() {
+    const used = [...new Set(members.flatMap(industriesOf))].sort((a,b)=>a.localeCompare(b,'ja'));
+    const el = document.getElementById('industry-filter');
+    const chip = (label, val, active) =>
+      `<span class="ind-chip" data-ind="${esc(val)}" style="cursor:pointer;font-size:11px;font-weight:700;padding:4px 11px;border-radius:14px;border:1.5px solid ${active?'transparent':'var(--border)'};background:${active?'linear-gradient(135deg,#3BA3E6,#1C6BA8)':'#fff'};color:${active?'#fff':'var(--ink-mid)'}">${label}</span>`;
+    el.innerHTML = chip('すべて', '', industryFilter==='') + used.map(i => chip(i, i, industryFilter===i)).join('');
+    el.querySelectorAll('.ind-chip').forEach(c => c.onclick = () => {
+      industryFilter = c.dataset.ind; buildIndustryFilter(); apply();
+    });
+  }
+
+  function apply() {
+    let list = members;
+    if (industryFilter) list = list.filter(m => industriesOf(m).includes(industryFilter));
+    if (kw) {
+      list = list.filter(m => {
+        const hay = [m.name, m.nameKana, m.businessContent, m.aspiration,
+          ...companiesOf(m).flatMap(c => [c.name, c.industry, c.address])].filter(Boolean).join(' ').toLowerCase();
+        return hay.includes(kw);
+      });
+    }
+    render(list);
   }
 
   function render(list) {
@@ -64,26 +103,23 @@
     el.innerHTML = `<div class="member-grid">${list.map(m => {
       const initial = (m.name || '?').charAt(0);
       const avatar = m.photoURL ? `<img src="${m.photoURL}" alt="">` : esc(initial);
+      const comps = companiesOf(m);
+      const inds = industriesOf(m);
       return `<div class="member-card" onclick="location.href='profile.html?uid=${m.uid}'">
         <div class="mc-head">
           <div class="mc-avatar">${avatar}</div>
           <div style="min-width:0">
             <div class="mc-name">${esc(m.name || '（未設定）')}</div>
-            <div class="mc-company">${esc(m.companyName || '')}</div>
+            <div class="mc-company">${esc(comps[0]?.name || '')}${comps.length>1?` 他${comps.length-1}社`:''}</div>
           </div>
         </div>
+        ${inds.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin:6px 0">${inds.map(industryBadge).join('')}</div>` : ''}
         ${m.aspiration ? `<div class="mc-aspiration">志：${esc(m.aspiration)}</div>` : ''}
       </div>`;
     }).join('')}</div>`;
   }
 
-  document.getElementById('search').oninput = (e) => {
-    const kw = e.target.value.toLowerCase().trim();
-    if (!kw) { render(members); return; }
-    render(members.filter(m =>
-      [m.name, m.companyName, m.businessContent, m.aspiration].some(s => s && s.toLowerCase().includes(kw))
-    ));
-  };
+  document.getElementById('search').oninput = (e) => { kw = e.target.value.toLowerCase().trim(); apply(); };
 </script>
 </body>
 </html>

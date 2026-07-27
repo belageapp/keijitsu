@@ -40,6 +40,7 @@
     <div class="page-title"><span class="ico">📅</span>広島管理イベント 一覧</div>
     <button class="btn btn-primary" id="addBtn" style="display:none">＋ イベント追加</button>
   </div>
+  <div style="margin-bottom:12px"><input id="ev-search" placeholder="🔍 タイトル・種別・場所・内容で検索" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;outline:none"></div>
   <div class="filter-tabs" style="align-items:center">
     <div class="filter-tab active" data-f="upcoming">開催予定</div>
     <div class="filter-tab" data-f="past">過去</div>
@@ -82,6 +83,7 @@
   let allEvents = [];
   let filter = 'upcoming';
   let typeFilter = '';
+  let evKw = '';
 
   // 種別セレクトを構築（モーダル用・絞り込み用）
   document.getElementById('ev-type').innerHTML =
@@ -89,6 +91,7 @@
   document.getElementById('type-filter').innerHTML =
     '<option value="">すべての種別</option>' + EVENT_TYPES.map(t => `<option value="${t}">${t}</option>`).join('');
   document.getElementById('type-filter').onchange = (e) => { typeFilter = e.target.value; render(); };
+  document.getElementById('ev-search').oninput = (e) => { evKw = e.target.value.toLowerCase().trim(); render(); };
 
   const WD = ['日','月','火','水','木','金','土'];
   function fmtDate(ts) {
@@ -124,6 +127,7 @@
     const now = new Date();
     let rows = allEvents.map(ev => ({ ...ev, _d: fmtDate(ev.startAt) }));
     if (typeFilter) rows = rows.filter(r => r.eventType === typeFilter);
+    if (evKw) rows = rows.filter(r => [r.title, r.eventType, r.location, r.description].filter(Boolean).join(' ').toLowerCase().includes(evKw));
     if (filter === 'upcoming') rows = rows.filter(r => r._d && r._d >= new Date(now.toDateString())).sort((a,b)=>a._d-b._d);
     else if (filter === 'past') rows = rows.filter(r => !r._d || r._d < new Date(now.toDateString())).sort((a,b)=>b._d-a._d);
     else rows.sort((a,b)=> (b._d||0)-(a._d||0));

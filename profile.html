@@ -24,6 +24,19 @@
   .info-val.empty-val{color:var(--ink-light)}
   .prose{font-size:14px;line-height:1.9;white-space:pre-wrap;color:var(--ink)}
   .prose.empty-val{color:var(--ink-light)}
+  /* 会社カード（表示） */
+  .company-card{border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;background:#FBFDFF}
+  .company-card:last-child{margin-bottom:0}
+  .cc-name{font-size:15px;font-weight:800;color:var(--ink)}
+  .cc-role{font-size:12px;color:var(--ink-mid)}
+  .cc-detail{font-size:12px;color:var(--ink-mid);margin-top:6px;line-height:1.8}
+  .cc-detail a{color:var(--gold-dark);font-weight:600;word-break:break-all}
+  /* 会社カード（編集） */
+  .company-edit{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;background:#FBFDFF;position:relative}
+  .company-edit .ce-row{display:flex;gap:8px;margin-bottom:8px}
+  .company-edit .ce-row:last-child{margin-bottom:0}
+  .company-edit input,.company-edit select{width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:#fff}
+  .ce-del{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--red);font-size:12px;font-weight:700;cursor:pointer}
 </style>
 </head>
 <body>
@@ -48,8 +61,10 @@
         <input id="e-mei-kana" placeholder="めい（たろう）">
       </div>
     </div>
-    <div class="field"><label>会社名</label><input id="e-company"></div>
-    <div class="field"><label>役職</label><input id="e-title" placeholder="例：代表取締役"></div>
+    <div class="field"><label>会社・組織（複数登録できます）</label>
+      <div id="companies-edit"></div>
+      <button type="button" class="btn btn-outline btn-sm" id="addCompanyBtn" style="margin-top:6px">＋ 会社・組織を追加</button>
+    </div>
     <div class="field"><label>志</label><textarea id="e-aspiration" placeholder="あなたの志を記入"></textarea></div>
     <div class="field"><label>事業内容</label><textarea id="e-business" placeholder="事業内容を記入"></textarea></div>
     <div class="modal-btns">
@@ -81,10 +96,22 @@
   import { ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
   import { db, storage } from './firebase-config.js';
   import { requireAuth, renderTopbar, canEdit, canEditProfile } from './auth.js';
+  import { INDUSTRIES, industryBadge } from './constants.js';
 
   const targetUid = new URLSearchParams(location.search).get('uid');
   let me = null, user = null, members = [], memberMap = {};
   function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function escAttr(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+
+  // 既存データを companies 配列に正規化（旧 companyName/title → companies[0]）
+  function getCompanies(u) {
+    if (Array.isArray(u.companies) && u.companies.length) return u.companies;
+    if (u.companyName) return [{ name: u.companyName, title: u.title || '', industry: '', address: '', phone: '', url: '' }];
+    return [];
+  }
+
+  const industryOptions = (sel) => '<option value="">業種を選択</option>' +
+    INDUSTRIES.map(i => `<option value="${i}"${i===sel?' selected':''}>${i}</option>`).join('');
 
   (async () => {
     me = await requireAuth();
@@ -116,6 +143,8 @@
     const avatar = user.photoURL ? `<img src="${user.photoURL}" alt="">` : esc(initial);
     const introducer = user.introducerUid ? memberMap[user.introducerUid]?.name : null;
     const inviter    = user.inviterUid ? memberMap[user.inviterUid]?.name : null;
+    const companies = getCompanies(user);
+    const primary = companies[0];
 
     document.getElementById('content').innerHTML = `
       <div class="card prof-head">
@@ -125,10 +154,26 @@
         <div style="flex:1;min-width:0">
           ${user.nameKana ? `<div style="font-size:11px;color:var(--ink-light)">${esc(user.nameKana)}</div>` : ''}
           <div class="prof-name">${esc(user.name || '（未設定）')}</div>
-          <div class="prof-company">${esc(user.companyName || '')}</div>
-          <div class="prof-title">${esc(user.title || '')}</div>
+          <div class="prof-company">${esc(primary?.name || '')}</div>
+          <div class="prof-title">${esc(primary?.title || '')}</div>
         </div>
         ${editableSelf ? '<button class="btn btn-outline btn-sm" id="editBtn">基本情報を編集</button>' : ''}
+      </div>
+
+      <div class="card sec">
+        <div class="sec-head"><div class="sec-title"><span class="ico">🏢</span>会社・組織</div></div>
+        ${companies.length ? companies.map(c => `
+          <div class="company-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap">
+              <div><span class="cc-name">${esc(c.name)}</span> ${c.title ? `<span class="cc-role">${esc(c.title)}</span>` : ''}</div>
+              ${industryBadge(c.industry)}
+            </div>
+            <div class="cc-detail">
+              ${c.address ? `📍 ${esc(c.address)}<br>` : ''}
+              ${c.phone ? `☎ <a href="tel:${escAttr(c.phone)}">${esc(c.phone)}</a>　` : ''}
+              ${c.url ? `🌐 <a href="${escAttr(c.url)}" target="_blank" rel="noopener">${esc(c.url)}</a>` : ''}
+            </div>
+          </div>`).join('') : '<div class="prose empty-val">未登録</div>'}
       </div>
 
       <div class="card sec">
@@ -168,18 +213,56 @@
     }
   }
 
+  // ── 会社・組織リポーター ──
+  function companyEditorHtml(c = {}) {
+    return `<div class="company-edit">
+      <button type="button" class="ce-del" title="削除">✕ 削除</button>
+      <div class="ce-row"><input class="ce-name" placeholder="会社・組織名" value="${escAttr(c.name)}"></div>
+      <div class="ce-row">
+        <input class="ce-title" placeholder="役職（例：代表取締役）" value="${escAttr(c.title)}">
+        <select class="ce-industry">${industryOptions(c.industry)}</select>
+      </div>
+      <div class="ce-row"><input class="ce-address" placeholder="住所" value="${escAttr(c.address)}"></div>
+      <div class="ce-row">
+        <input class="ce-phone" placeholder="電話番号" value="${escAttr(c.phone)}">
+        <input class="ce-url" placeholder="URL（https://…）" value="${escAttr(c.url)}">
+      </div>
+    </div>`;
+  }
+  function bindCompanyDeletes() {
+    document.querySelectorAll('#companies-edit .ce-del').forEach(b => b.onclick = (e) => {
+      e.target.closest('.company-edit').remove();
+    });
+  }
+  function addCompanyEditor(c) {
+    document.getElementById('companies-edit').insertAdjacentHTML('beforeend', companyEditorHtml(c));
+    bindCompanyDeletes();
+  }
+  function collectCompanies() {
+    return [...document.querySelectorAll('#companies-edit .company-edit')].map(el => ({
+      name:     el.querySelector('.ce-name').value.trim(),
+      title:    el.querySelector('.ce-title').value.trim(),
+      industry: el.querySelector('.ce-industry').value,
+      address:  el.querySelector('.ce-address').value.trim(),
+      phone:    el.querySelector('.ce-phone').value.trim(),
+      url:      el.querySelector('.ce-url').value.trim(),
+    })).filter(c => c.name);  // 名称が空の行は除外
+  }
+  document.getElementById('addCompanyBtn').onclick = () => addCompanyEditor({});
+
   // ── 基本情報編集 ──
   const editModal = document.getElementById('editModal');
   function openEditModal() {
-    // 既存データ：sei/mei が無ければ name をスペースで分割して補完
     const nameParts = (user.name || '').split(/[\s　]+/);
     const kanaParts = (user.nameKana || '').split(/[\s　]+/);
     document.getElementById('e-sei').value = user.sei || nameParts[0] || '';
     document.getElementById('e-mei').value = user.mei || nameParts[1] || '';
     document.getElementById('e-sei-kana').value = user.seiKana || kanaParts[0] || '';
     document.getElementById('e-mei-kana').value = user.meiKana || kanaParts[1] || '';
-    document.getElementById('e-company').value = user.companyName || '';
-    document.getElementById('e-title').value = user.title || '';
+    // 会社エディタを構築（既存を並べる。1件も無ければ空1件）
+    const companies = getCompanies(user);
+    document.getElementById('companies-edit').innerHTML = '';
+    (companies.length ? companies : [{}]).forEach(c => addCompanyEditor(c));
     document.getElementById('e-aspiration').value = user.aspiration || '';
     document.getElementById('e-business').value = user.businessContent || '';
     editModal.classList.add('open');
@@ -192,12 +275,16 @@
     const meiKana = document.getElementById('e-mei-kana').value.trim();
     if (!sei || !mei || !seiKana || !meiKana) { showToast('お名前とふりがなは必須です'); return; }
     try {
+      const companies = collectCompanies();
       const upd = {
         sei, mei, seiKana, meiKana,
         name: `${sei} ${mei}`,
         nameKana: `${seiKana} ${meiKana}`,
-        companyName: document.getElementById('e-company').value.trim(),
-        title: document.getElementById('e-title').value.trim(),
+        companies,
+        // 検索・一覧の後方互換：1社目を従来フィールドにも保持
+        companyName: companies[0]?.name || '',
+        title: companies[0]?.title || '',
+        industries: companies.map(c => c.industry).filter(Boolean),  // 検索用
         aspiration: document.getElementById('e-aspiration').value.trim(),
         businessContent: document.getElementById('e-business').value.trim(),
       };
