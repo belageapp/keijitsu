@@ -72,6 +72,16 @@
   .pill-settled{font-size:10px;font-weight:700;padding:1px 7px;border-radius:9px;background:#E7F1EA;color:#2E7A54}
   .pill-guest{font-size:10px;font-weight:700;padding:1px 7px;border-radius:9px;background:#FBF0E1;color:#B0742A}
   .pill-emp{font-size:10px;font-weight:700;padding:1px 7px;border-radius:9px;background:#EAF0F6;color:#3A5A7A}
+  /* 参加者テーブル */
+  .ptable{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px}
+  .ptable th{background:#F1F6FB;color:var(--ink-mid);font-weight:700;font-size:11px;padding:6px 8px;text-align:center;border-bottom:1px solid var(--border);white-space:nowrap}
+  .ptable th:first-child{text-align:left}
+  .ptable td{padding:7px 8px;text-align:center;border-bottom:1px solid var(--border);vertical-align:top}
+  .ptable td:first-child{text-align:left}
+  .ptable tr:last-child td{border-bottom:none}
+  .ptable .g-toggle{cursor:pointer;color:var(--indigo);font-weight:600}
+  .pdetail{background:#FBFDFF;font-size:12px;color:var(--ink-mid);text-align:left!important;line-height:1.9}
+  .pdetail a{color:var(--gold-dark);word-break:break-all}
 </style>
 </head>
 <body>
@@ -452,38 +462,86 @@
   }
 
   // 本会・懇親会それぞれの参加者を集計
-  function participantsFor(kind) {
-    // kind: 'main' | 'social'
-    const list = [];
+  // 参加者をカテゴリ別に整理
+  function participantRows() {
+    const members = [], guests = [], emps = [], others = [];
     attendance.forEach(a => {
       const m = memberMap[a.uid];
-      const self = kind === 'main' ? a.main : a.social;
-      if (self === 'attending') list.push({ label: m?.name || '不明', kind:'member', uid:a.uid, settled:a.settled, inviter: effectiveInviter(a.uid) });
-      (a.guests || []).forEach(g => { if (kind==='main' ? g.joinMain : g.joinSocial) list.push({ label: g.name || 'ゲスト', kind:'guest', by:m?.name, company:g.company, settled:g.settled }); });
-      (a.employees || []).forEach(e => { if (kind==='main' ? e.joinMain : e.joinSocial) list.push({ label: e.name || '社員', kind:'emp', by:m?.name, settled:e.settled }); });
+      if (a.main === 'attending' || a.social === 'attending') {
+        members.push({ name: m?.name || '不明', uid: a.uid, main: a.main==='attending', social: a.social==='attending', settled: !!a.settled, inviter: effectiveInviter(a.uid) });
+      }
+      (a.guests || []).forEach((g, gi) => { if (g.joinMain || g.joinSocial) guests.push({ key: a.uid+'_g'+gi, name: g.name||'', company: g.company||'', industry: g.industry||'', detail: g.detail||'', sites: g.sites||[], facebook: g.facebook||'', main: !!g.joinMain, social: !!g.joinSocial, settled: !!g.settled, by: m?.name || '' }); });
+      (a.employees || []).forEach(e => { if (e.joinMain || e.joinSocial) emps.push({ name: e.name||'', main: !!e.joinMain, social: !!e.joinSocial, settled: !!e.settled, by: m?.name || '' }); });
     });
-    (ev.others || []).forEach(o => { if (kind==='main' ? o.joinMain : o.joinSocial) list.push({ label: o.name || 'その他', kind:'other', company:o.category }); });
-    return list;
+    (ev.others || []).forEach(o => { if (o.joinMain || o.joinSocial) others.push({ name: o.name||'', category: o.category||'', main: !!o.joinMain, social: !!o.joinSocial }); });
+    return { members, guests, emps, others };
   }
-  function pstatRowHtml(p, editable) {
-    const tag = p.kind==='guest' ? `<span class="pill-guest">ゲスト</span>` : p.kind==='emp' ? `<span class="pill-emp">社員</span>` : p.kind==='other' ? `<span class="pill-guest">その他</span>` : '';
-    const by = p.by ? `<span style="font-size:11px;color:var(--ink-light)">（${esc(p.by)}）</span>` : '';
-    const name = p.kind==='member' ? `<a href="profile.html?uid=${p.uid}" style="font-weight:600">${esc(p.label)}</a>` : `<span style="font-weight:600">${esc(p.label)}</span>`;
-    const company = p.company ? `<span style="font-size:11px;color:var(--ink-mid)">${esc(p.company)}</span>` : '';
-    const settled = p.settled ? `<span class="pill-settled">決済済</span>` : '';
-    const inv = p.inviter ? `<span style="font-size:10px;color:var(--ink-light)">声かけ:${esc(p.inviter)}</span>` : '';
-    const invBtn = (editable && p.kind==='member') ? `<button class="btn-logout" style="padding:1px 6px;font-size:10px" data-inviter="${p.uid}">声かけ者</button>` : '';
-    return `<div class="pstat-row">${tag}${name}${by}${company}${settled}${inv}${invBtn}</div>`;
+
+  const yn = (b) => b ? '<span style="color:var(--green);font-weight:800">○</span>' : '<span style="color:var(--ink-light)">—</span>';
+
+  function categoryTable(title, icon, rows, opts = {}) {
+    const settledCount = rows.filter(r => r.settled).length;
+    const showSettled = opts.settled !== false;
+    const settledSummary = (showSettled && rows.length) ? `<span style="font-size:11px;color:var(--ink-mid)">決済済 ${settledCount} / 未 ${rows.length - settledCount}</span>` : '';
+    if (!rows.length) {
+      return `<div class="card sec"><div class="sec-title"><span class="ico">${icon}</span>${title}（0名）</div><div style="font-size:13px;color:var(--ink-light)">参加者はいません</div></div>`;
+    }
+    const head = `<tr><th>氏名</th><th>本会</th><th>懇親会</th>${showSettled?'<th>決済</th>':''}</tr>`;
+    const body = rows.map((r, i) => {
+      const nameCell = opts.kind==='member'
+        ? `<a href="profile.html?uid=${r.uid}" style="font-weight:600">${esc(r.name)}</a>${r.inviter?`<div style="font-size:10px;color:var(--ink-light)">声かけ:${esc(r.inviter)}</div>`:''}${opts.editable?` <button class="btn-logout" style="padding:1px 6px;font-size:10px" data-inviter="${r.uid}">声かけ者</button>`:''}`
+        : opts.kind==='guest'
+          ? `<span class="g-toggle" data-gkey="${r.key}">${esc(r.name||'（無名）')} ▾</span>${r.company?`<div style="font-size:11px;color:var(--ink-mid)">${esc(r.company)}</div>`:''}`
+          : opts.kind==='other'
+            ? `<span style="font-weight:600">${esc(r.name)}</span> <span class="pill-guest">${esc(r.category||'その他')}</span>`
+            : `<span style="font-weight:600">${esc(r.name)}</span>${r.by?`<span style="font-size:10px;color:var(--ink-light)">（${esc(r.by)}）</span>`:''}`;
+      let html = `<tr><td>${nameCell}</td><td>${yn(r.main)}</td><td>${yn(r.social)}</td>${showSettled?`<td>${yn(r.settled)}</td>`:''}</tr>`;
+      if (opts.kind==='guest') {
+        const sites = (r.sites||[]).filter(Boolean).map(u=>`<a href="${escAttr(u)}" target="_blank" rel="noopener">${esc(u)}</a>`).join('<br>');
+        const parts = [];
+        if (r.industry) parts.push(`業種：${industryBadge(r.industry)}`);
+        if (r.by) parts.push(`紹介：${esc(r.by)}`);
+        if (r.detail) parts.push(`詳細：${esc(r.detail)}`);
+        if (sites) parts.push(`会社サイト：<br>${sites}`);
+        if (r.facebook) parts.push(`Facebook：<a href="${escAttr(r.facebook)}" target="_blank" rel="noopener">${esc(r.facebook)}</a>`);
+        html += `<tr class="pdetail-row" id="gd-${r.key}" style="display:none"><td colspan="${showSettled?4:3}" class="pdetail">${parts.join('<br>') || '詳細情報なし'}</td></tr>`;
+      }
+      return html;
+    }).join('');
+    return `<div class="card sec">
+      <div class="sec-head"><div class="sec-title"><span class="ico">${icon}</span>${title}（${rows.length}名）</div>${settledSummary}</div>
+      <div style="overflow-x:auto"><table class="ptable"><thead>${head}</thead><tbody>${body}</tbody></table></div>
+    </div>`;
   }
+
   function participationStatusHtml(editable) {
-    const mainList = participantsFor('main');
-    const socialList = participantsFor('social');
-    const block = (title, list) => `
-      <div class="card sec">
-        <div class="sec-title"><span class="ico">👥</span>${title}（${list.length}名）</div>
-        ${list.length ? list.map(p => pstatRowHtml(p, editable)).join('') : '<div style="font-size:13px;color:var(--ink-light)">まだ参加者がいません</div>'}
-      </div>`;
-    return block('本会 参加者', mainList) + block('懇親会 参加者', socialList);
+    const { members, guests, emps, others } = participantRows();
+    return `
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+        <button class="btn btn-outline btn-sm" id="csvBtn">📥 参加者CSV出力</button>
+      </div>
+      ${categoryTable('会員', '👤', members, { kind:'member', editable })}
+      ${categoryTable('ゲスト', '🎟', guests, { kind:'guest' })}
+      ${categoryTable('社員', '🏢', emps, { kind:'emp' })}
+      ${categoryTable('その他', '🎤', others, { kind:'other', settled:false })}
+    `;
+  }
+
+  function exportParticipantsCsv() {
+    const { members, guests, emps, others } = participantRows();
+    const rows = [['カテゴリ','氏名','社名/区分','業種','本会','懇親会','決済','紹介会員','会社サイト','Facebook','詳細']];
+    const mk = (b) => b ? '○' : '';
+    members.forEach(r => rows.push(['会員', r.name, '', '', mk(r.main), mk(r.social), mk(r.settled), r.inviter||'', '', '', '']));
+    guests.forEach(r => rows.push(['ゲスト', r.name, r.company, r.industry, mk(r.main), mk(r.social), mk(r.settled), r.by||'', (r.sites||[]).join(' / '), r.facebook, r.detail]));
+    emps.forEach(r => rows.push(['社員', r.name, '', '', mk(r.main), mk(r.social), mk(r.settled), r.by||'', '', '', '']));
+    others.forEach(r => rows.push(['その他', r.name, r.category, '', mk(r.main), mk(r.social), '', '', '', '', '']));
+    const csv = '﻿' + rows.map(r => r.map(c => /[",\r\n]/.test(c) ? '"'+String(c).replace(/"/g,'""')+'"' : c).join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `参加者_${(ev.title||'イベント').replace(/[\\/:*?"<>|]/g,'')}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
   }
 
   function bindAttendance(editable) {
@@ -497,6 +555,14 @@
       if (so) so.onclick = saveOthers;
       document.querySelectorAll('#tab-panel [data-inviter]').forEach(b => b.onclick = () => openInviterModal(b.dataset.inviter));
     }
+    // CSV出力
+    const csvBtn = document.getElementById('csvBtn');
+    if (csvBtn) csvBtn.onclick = exportParticipantsCsv;
+    // ゲスト詳細の展開
+    document.querySelectorAll('#tab-panel .g-toggle').forEach(el => el.onclick = () => {
+      const row = document.getElementById('gd-' + el.dataset.gkey);
+      if (row) row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+    });
     bindPcardDeletes();
   }
   function bindPcardDeletes() {
