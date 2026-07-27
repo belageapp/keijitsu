@@ -64,18 +64,22 @@
     <div class="field"><label>アカウント状態</label>
       <select id="e-disabled"><option value="false">有効</option><option value="true">無効</option></select>
     </div>
-    <div class="modal-btns">
-      <button class="btn btn-outline" id="eCancel">キャンセル</button>
-      <button class="btn btn-primary" id="eSave">保存する</button>
+    <div class="modal-btns" style="justify-content:space-between">
+      <button class="btn btn-danger btn-sm" id="eDelete">この会員を削除</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline" id="eCancel">キャンセル</button>
+        <button class="btn btn-primary" id="eSave">保存する</button>
+      </div>
     </div>
     <div id="eStatus" style="font-size:12px;margin-top:10px"></div>
+    <div style="font-size:11px;color:var(--ink-light);margin-top:8px;line-height:1.7">※ 削除はアプリの会員データを消します。ログインアカウント自体はFirebaseコンソールのAuthenticationから別途削除してください。</div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script type="module">
-  import { collection, getDocs, doc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+  import { collection, getDocs, doc, setDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
   import { createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
   import { initializeApp, deleteApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
   import { getAuth } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -201,6 +205,20 @@
     editModal.classList.add('open');
   }
   document.getElementById('eCancel').onclick = () => editModal.classList.remove('open');
+  document.getElementById('eDelete').onclick = async () => {
+    const uid = document.getElementById('e-uid').value;
+    const u = users.find(x => x.uid === uid);
+    const st = document.getElementById('eStatus');
+    if (uid === me.uid) { st.style.color='var(--red)'; st.textContent='自分自身は削除できません'; return; }
+    if (!confirm(`${u?.name || u?.email || 'この会員'} をアプリから削除します。よろしいですか？\n（ログインアカウント自体はAuthenticationから別途削除が必要です）`)) return;
+    st.style.color = 'var(--ink-mid)'; st.textContent = '削除中...';
+    try {
+      await deleteDoc(doc(db, 'users', uid));
+      editModal.classList.remove('open');
+      await load();
+      showToast('削除しました');
+    } catch (e) { st.style.color='var(--red)'; st.textContent = 'エラー：' + e.message; }
+  };
   document.getElementById('eSave').onclick = async () => {
     const uid = document.getElementById('e-uid').value;
     const role = document.getElementById('e-role').value;
