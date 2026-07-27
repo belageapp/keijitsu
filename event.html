@@ -64,7 +64,7 @@
     </div>
     <div class="field"><label>開催場所</label><input id="ee-location"></div>
     <div class="field"><label>内容・概要</label><textarea id="ee-desc"></textarea></div>
-    <div class="field"><label>役割分担表（GoogleスプレッドシートURL）</label><input id="ee-sheet" placeholder="https://docs.google.com/spreadsheets/..."><div class="hint">「リンクを知っている全員が閲覧可」または「ウェブに公開」で埋め込み表示されます</div></div>
+    <div class="field"><label>役割分担表（GoogleスプレッドシートURL）</label><input id="ee-sheet" placeholder="https://docs.google.com/spreadsheets/..."><div class="hint">「リンクを知っている全員が閲覧可」または「ウェブに公開」で埋め込み表示されます。特定のタブを表示したい場合は、そのタブを開いた状態のURL（末尾 #gid=…）を貼り付けてください。</div></div>
     <div class="modal-btns">
       <button class="btn btn-outline" id="eeCancel">キャンセル</button>
       <button class="btn btn-primary" id="eeSave">保存する</button>
@@ -124,7 +124,7 @@
   const WD = ['日','月','火','水','木','金','土'];
   function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
   function escAttr(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
-  // GoogleスプレッドシートURLを埋め込み用に変換
+  // GoogleスプレッドシートURLを「埋め込み（閲覧）」用に変換（gidで特定タブを表示）
   function sheetEmbedUrl(url){
     if(!url) return '';
     if(url.includes('/pubhtml')) return url + (url.includes('?')?'&':'?') + 'widget=true&headers=false';
@@ -133,6 +133,17 @@
     if(m){
       const gid = (url.match(/[#&?]gid=([0-9]+)/)||[])[1];
       return `https://docs.google.com/spreadsheets/d/${m[1]}/preview${gid?('?gid='+gid):''}`;
+    }
+    return url;
+  }
+  // 「編集（Googleで開く）」用URL（該当タブを編集モードで開く）
+  function sheetEditUrl(url){
+    if(!url) return '';
+    if(url.includes('/d/e/')) return url;  // ウェブ公開URLは編集用に変換できない
+    const m = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+    if(m){
+      const gid = (url.match(/[#&?]gid=([0-9]+)/)||[])[1];
+      return `https://docs.google.com/spreadsheets/d/${m[1]}/edit${gid?('#gid='+gid):''}`;
     }
     return url;
   }
@@ -239,12 +250,12 @@
           <div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--border)">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap">
               <span style="font-size:13px;font-weight:700;color:var(--ink-mid)">📊 役割分担表（スプレッドシート）</span>
-              <a href="${escAttr(ev.roleSheetUrl)}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="text-decoration:none">別画面で開く ↗</a>
+              <a href="${escAttr(sheetEditUrl(ev.roleSheetUrl))}" target="_blank" rel="noopener" class="btn btn-primary btn-sm" style="text-decoration:none">✏️ Googleで編集 ↗</a>
             </div>
             <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">
               <iframe src="${escAttr(sheetEmbedUrl(ev.roleSheetUrl))}" style="width:100%;height:420px;border:0" loading="lazy"></iframe>
             </div>
-            <div style="font-size:11px;color:var(--ink-light);margin-top:6px">※ 表示されない場合はシートの共有設定（リンクを知っている全員が閲覧可 / ウェブに公開）をご確認いただくか、「別画面で開く」からご覧ください。</div>
+            <div style="font-size:11px;color:var(--ink-light);margin-top:6px">※ 上の埋め込みは閲覧用です。編集は「Googleで編集」から行ってください（編集権限のある方のみ）。特定のタブを表示したい場合は、そのタブを開いた状態のURL（末尾に #gid=… が付いたもの）を登録してください。</div>
           </div>` : ''}
       </div>
 
