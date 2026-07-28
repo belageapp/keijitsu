@@ -24,7 +24,7 @@
 <div class="box" id="box">
   <div class="brand">経営実践研究会 広島<span class="en">HIROSHIMA MEMBERS</span></div>
   <h1>広島会員 情報共有アプリ 新規登録</h1>
-  <div class="lead">こちらは<strong>経営実践研究会 広島会員 専用</strong>の情報共有アプリです。<br>（本部アプリとは別のシステムです）<br><br>登録後、確認メールが届きます。メール認証と事務局の承認が完了するとご利用いただけます。</div>
+  <div class="lead">こちらは<strong>経営実践研究会 広島会員 専用</strong>の情報共有アプリです。<br>（本部アプリとは別のシステムです）<br><br>ご登録後、<strong>事務局の承認</strong>が完了するとご利用いただけます。</div>
 
   <div class="field"><label>お名前（漢字） <span style="color:var(--red)">*</span></label>
     <div style="display:flex;gap:8px">
@@ -46,7 +46,7 @@
 </div>
 
 <script type="module">
-  import { createUserWithEmailAndPassword, sendEmailVerification, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+  import { createUserWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
   import { doc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
   import { auth, db } from './firebase-config.js';
 
@@ -81,9 +81,8 @@
         disabled: false, selfRegistered: true,
         createdAt: new Date().toISOString(),
       });
-      // 確認メール送信
-      await sendEmailVerification(cred.user);
-      // いったんサインアウト（認証・承認後にログインしてもらう）
+      // メール認証は行わず、事務局の承認を待つ運用
+      // いったんサインアウト（承認後にログインしてもらう）
       await signOut(auth);
       showDone(email);
     } catch (e) {
@@ -99,17 +98,15 @@
 
   function showDone(email) {
     document.getElementById('box').innerHTML = `
-      <div class="brand">経営実践研究会<span class="en">KEIJITSU</span></div>
+      <div class="brand">経営実践研究会 広島<span class="en">HIROSHIMA MEMBERS</span></div>
       <div class="done-box">
-        <div class="ico">📧</div>
-        <div style="font-size:16px;font-weight:800;color:var(--ink);margin-bottom:10px">確認メールを送信しました</div>
+        <div class="ico">✅</div>
+        <div style="font-size:16px;font-weight:800;color:var(--ink);margin-bottom:10px">登録を受け付けました</div>
         <div style="font-size:13px;color:var(--ink-mid);line-height:1.9">
-          <strong>${email}</strong> 宛に確認メールをお送りしました。<br>
-          メール内のリンクをクリックして認証を完了してください。<br><br>
-          その後、<strong>事務局の承認</strong>が完了しましたらログインいただけます。
+          <strong>${email}</strong> で登録しました。<br><br>
+          <strong>事務局の承認</strong>が完了しましたら、ご登録のメールアドレスとパスワードでログインいただけます。承認まで少々お待ちください。
         </div>
-        <div style="font-size:11px;color:var(--ink-light);margin-top:18px">メールが届かない場合は迷惑メールフォルダをご確認ください。</div>
-        <a href="login.html" class="btn btn-outline" style="display:inline-block;margin-top:20px;text-decoration:none">ログイン画面へ</a>
+        <a href="login.html" class="btn btn-primary" style="display:inline-block;margin-top:22px;text-decoration:none">ログイン画面へ</a>
       </div>`;
   }
 </script>

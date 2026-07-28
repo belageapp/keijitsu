@@ -2,7 +2,7 @@
 // auth.js - 認証・権限モデル（全ページ共通）
 //   ロール: member（一般）/ editor（編集者）/ admin（管理者）
 // ===================================================
-import { onAuthStateChanged, signOut, sendEmailVerification } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { auth, db } from './firebase-config.js';
 
@@ -46,11 +46,7 @@ export function requireAuth() {
           showFatal('このアカウントは無効化されています。事務局にご連絡ください。');
           return;
         }
-        // 自己登録者のみメール認証を必須にする（管理者招待・既存アカウントは対象外）
-        if (data.selfRegistered === true && !user.emailVerified) {
-          try { await user.reload(); } catch (_) {}
-          if (!user.emailVerified) { showUnverified(user); return; }
-        }
+        // メール認証は使わず、事務局承認のみをゲートにする
         if (data.status === 'pending') {
           showPending();
           return;
@@ -119,17 +115,3 @@ function showPending() {
   const b = document.getElementById('__logout2'); if (b) b.onclick = logout;
 }
 
-function showUnverified(user) {
-  gateShell('📧', 'メール認証が未完了です',
-    `<strong>${user.email}</strong> 宛の確認メールのリンクをクリックして、メール認証を完了してください。<br>認証後、この画面を再読み込みしてください。`,
-    `<button id="__resend" style="padding:10px 24px;background:#B08D3F;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-right:6px;">確認メールを再送</button>
-     <button id="__reload" style="padding:10px 20px;background:#fff;border:1.5px solid #E5E0D8;color:#6B6459;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">再読み込み</button>
-     <div id="__resendMsg" style="font-size:12px;color:#3F7A54;margin-top:12px;"></div>
-     <div style="margin-top:14px;"><a href="#" id="__logout3" style="font-size:12px;color:#9A9284;">ログアウト</a></div>`);
-  document.getElementById('__reload').onclick = () => location.reload();
-  document.getElementById('__logout3').onclick = (e) => { e.preventDefault(); logout(); };
-  document.getElementById('__resend').onclick = async () => {
-    try { await sendEmailVerification(user); document.getElementById('__resendMsg').textContent = '確認メールを再送しました'; }
-    catch (e) { document.getElementById('__resendMsg').style.color = '#B5493F'; document.getElementById('__resendMsg').textContent = '再送に失敗しました：' + e.message; }
-  };
-}
