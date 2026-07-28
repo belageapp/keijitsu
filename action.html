@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>アカウント手続き｜経営実践研究会 広島会員 情報共有アプリ</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  body{display:flex;align-items:center;justify-content:center;padding:20px}
+  .box{background:#fff;border:1px solid var(--border);border-radius:18px;padding:38px 32px;max-width:420px;width:100%;text-align:center;box-shadow:0 6px 30px var(--shadow)}
+  .brand{font-size:20px;font-weight:800;letter-spacing:.03em;background:linear-gradient(135deg,#3BA3E6,#1C6BA8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .brand .en{display:block;font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.22em;margin-top:4px;-webkit-text-fill-color:var(--gold)}
+  .ico{font-size:44px;margin:18px 0 12px}
+  h1{font-size:17px;font-weight:800;color:var(--ink);margin-bottom:10px}
+  p{font-size:13.5px;color:var(--ink-mid);line-height:1.9}
+  .field{text-align:left;margin-top:16px}
+  .msg{font-size:13px;margin-top:14px;min-height:18px;line-height:1.7}
+  .btn-full{width:100%;margin-top:18px}
+  .loading{color:var(--ink-light);font-size:14px;padding:30px 0}
+</style>
+</head>
+<body>
+<div class="box" id="box">
+  <div class="brand">経営実践研究会 広島<span class="en">HIROSHIMA MEMBERS</span></div>
+  <div class="loading" id="loading">読み込み中...</div>
+</div>
+
+<script type="module">
+  import { applyActionCode, checkActionCode, verifyPasswordResetCode, confirmPasswordReset } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+  import { auth } from './firebase-config.js';
+
+  const params = new URLSearchParams(location.search);
+  const mode = params.get('mode');
+  const oobCode = params.get('oobCode');
+  const box = document.getElementById('box');
+
+  const brand = `<div class="brand">経営実践研究会 広島<span class="en">HIROSHIMA MEMBERS</span></div>`;
+  function render(html){ box.innerHTML = brand + html; }
+
+  function loginBtn(label='ログイン画面へ'){
+    return `<a href="login.html" class="btn btn-primary btn-full" style="text-decoration:none;display:block">${label}</a>`;
+  }
+
+  (async () => {
+    if (!mode || !oobCode) {
+      render(`<div class="ico">❓</div><h1>無効なリンクです</h1><p>URLが正しくありません。お手数ですが、もう一度お手続きをやり直してください。</p>${loginBtn()}`);
+      return;
+    }
+    try {
+      if (mode === 'verifyEmail') {
+        await applyActionCode(auth, oobCode);
+        render(`<div class="ico">✅</div><h1>メールアドレスの確認が完了しました</h1><p>ご登録ありがとうございます。<br>この後、<strong>事務局の承認</strong>が完了しましたらログインいただけます。承認まで少々お待ちください。</p>${loginBtn()}`);
+      } else if (mode === 'resetPassword') {
+        const email = await verifyPasswordResetCode(auth, oobCode);
+        render(`
+          <div class="ico">🔑</div>
+          <h1>パスワードの再設定</h1>
+          <p><strong>${email}</strong> の<br>新しいパスワードを設定してください。</p>
+          <div class="field"><label style="font-size:12px;font-weight:700;color:var(--ink-mid)">新しいパスワード（8文字以上）</label>
+            <input type="password" id="newpw" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;margin-top:5px" autocomplete="new-password"></div>
+          <button class="btn btn-primary btn-full" id="resetBtn">パスワードを変更する</button>
+          <div class="msg" id="msg"></div>`);
+        const msg = document.getElementById('msg');
+        document.getElementById('resetBtn').onclick = async () => {
+          const pw = document.getElementById('newpw').value;
+          msg.style.color = 'var(--red)';
+          if (pw.length < 8) { msg.textContent = 'パスワードは8文字以上にしてください'; return; }
+          const btn = document.getElementById('resetBtn');
+          btn.disabled = true; btn.textContent = '変更中...';
+          try {
+            await confirmPasswordReset(auth, oobCode, pw);
+            render(`<div class="ico">✅</div><h1>パスワードを変更しました</h1><p>新しいパスワードでログインしてください。</p>${loginBtn()}`);
+          } catch (e) {
+            msg.textContent = 'エラー：' + (e.code || e.message);
+            btn.disabled = false; btn.textContent = 'パスワードを変更する';
+          }
+        };
+      } else if (mode === 'recoverEmail') {
+        const info = await checkActionCode(auth, oobCode);
+        await applyActionCode(auth, oobCode);
+        render(`<div class="ico">✅</div><h1>メールアドレスを元に戻しました</h1><p>アカウントのメールアドレスの変更を取り消しました。</p>${loginBtn()}`);
+      } else {
+        render(`<div class="ico">❓</div><h1>対応していない操作です</h1><p>このリンクは処理できませんでした。事務局にお問い合わせください。</p>${loginBtn()}`);
+      }
+    } catch (e) {
+      const m = {
+        'auth/invalid-action-code': 'このリンクは無効か、既に使用済み・期限切れです。お手数ですが、もう一度お手続きをやり直してください。',
+        'auth/expired-action-code': 'リンクの有効期限が切れています。もう一度お手続きをやり直してください。',
+      }[e.code] || ('処理に失敗しました：' + (e.code || e.message));
+      render(`<div class="ico">⚠️</div><h1>手続きを完了できませんでした</h1><p>${m}</p>${loginBtn()}`);
+    }
+  })();
+</script>
+</body>
+</html>
