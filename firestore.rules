@@ -36,11 +36,13 @@ service cloud.firestore {
       // 自分のドキュメントは承認待ちでも読める（他人の閲覧は active 会員のみ）
       allow read: if isAuth() && (request.auth.uid == userId || isActive());
 
-      // admin による作成、または本人による自己登録（member・pending・inviterなし 固定）
+      // admin による作成、または本人による自己登録（member・inviterなし 固定）
+      // ※テスト運用中：承認不要のため自己登録を status=='active' で許可。
+      //   承認制に戻すときは 'active' → 'pending' に戻す（register.html 側も同時に要変更）。
       allow create: if isAdmin()
         || (isAuth() && request.auth.uid == userId
             && request.resource.data.role == 'member'
-            && request.resource.data.status == 'pending'
+            && request.resource.data.status == 'active'
             && request.resource.data.disabled == false
             && request.resource.data.get('inviterUid', null) == null
             && request.resource.data.get('uid', userId) == userId);

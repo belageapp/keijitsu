@@ -5,6 +5,15 @@ Firebase（Auth / Firestore / Storage）＋ 静的HTML/JS、GitHub Pages（belag
 
 ---
 
+## v1.3.0 (2026-08-10) — 【一時運用】会員登録の承認を不要化（テスト期間）
+
+- テスト期間（幹部のみ登録）中は、会員登録を**事務局承認なしで即利用可**に変更。
+  - `register.html`：自己登録時の `status` を `pending` → `active`。案内文も「登録後そのままログインしてご利用いただけます」に変更。
+  - `firestore.rules`：自己登録の作成条件を `status == 'pending'` → `status == 'active'` に変更（サーバー側で許可）。
+- **承認制に戻すとき**：上記2ファイルの `active` → `pending` を元に戻し、`firestore.rules` を再デプロイする。既存の承認機能（admin.html の「承認」ボタン・auth.js の承認待ち画面）はそのまま残しています。
+
+---
+
 ## v1.2.0 (2026-07-27) — 出欠管理の本格化
 
 ### イベント詳細をタブ化
