@@ -5,6 +5,7 @@
 import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { auth, db } from './firebase-config.js';
+import { FEATURES } from './constants.js?v=1.6.0';
 
 export const ROLE_LABELS = {
   admin:  '管理者',
@@ -59,6 +60,26 @@ export function requireAuth() {
   });
 }
 
+// ── ログイン任意のページ用（イベント一覧・詳細）──────────
+// 戻り値: ログイン済みなら requireAuth と同じオブジェクト、未ログインなら null
+// 承認待ち・無効化のアカウントは未ログイン扱い（null）にする
+export function optionalAuth() {
+  return new Promise((resolve) => {
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) { resolve(null); return; }
+      try {
+        const snap = await getDoc(doc(db, 'users', user.uid));
+        if (!snap.exists()) { resolve(null); return; }
+        const data = snap.data();
+        if (data.disabled || data.status === 'pending') { resolve(null); return; }
+        resolve({ uid: user.uid, email: user.email, ...data });
+      } catch (e) {
+        resolve(null);
+      }
+    });
+  });
+}
+
 export async function logout() {
   await signOut(auth);
   location.href = 'login.html';
@@ -68,9 +89,10 @@ export async function logout() {
 export function renderTopbar(userData, active) {
   const links = [
     { key: 'events',  label: 'イベント', href: 'index.html' },
-    { key: 'members', label: '会員', href: 'members.html' },
   ];
-  if (isAdmin(userData)) links.push({ key: 'admin', label: '会員管理', href: 'admin.html' });
+  if (FEATURES.members && userData) links.push({ key: 'members', label: '会員', href: 'members.html' });
+  // 会員管理は常にメニューに出す。未ログインで押したときだけログイン画面へ（ログイン後に会員管理へ戻る）
+  links.push({ key: 'admin', label: '会員管理', href: userData ? 'admin.html' : 'login.html?next=admin.html' });
 
   const nav = links.map(l =>
     `<a class="nav-link ${l.key === active ? 'active' : ''}" href="${l.href}">${l.label}</a>`
@@ -82,13 +104,14 @@ export function renderTopbar(userData, active) {
     <a href="index.html" class="topbar-brand">経営実践研究会 広島<span class="sub">会員 情報共有アプリ</span></a>
     ${nav}
     <div class="topbar-spacer"></div>
+    ${userData ? `
     <div class="topbar-user">
       <div><a href="profile.html?uid=${userData.uid}" style="font-weight:700;color:var(--ink)">${userData.name || userData.email}</a></div>
       <div class="role">${ROLE_LABELS[userData.role] || userData.role}</div>
     </div>
-    <button class="btn-logout" id="__logout">ログアウト</button>`;
+    <button class="btn-logout" id="__logout">ログアウト</button>` : ''}`;
   document.body.insertBefore(bar, document.body.firstChild);
-  document.getElementById('__logout').onclick = logout;
+  const lo = document.getElementById('__logout'); if (lo) lo.onclick = logout;
 }
 
 function gateShell(icon, title, message, buttonsHtml) {

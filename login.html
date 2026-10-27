@@ -34,15 +34,19 @@
   <button class="btn btn-primary login-btn" id="loginBtn">ログイン</button>
   <div class="login-err" id="err"></div>
   <div><span class="reset-link" id="resetLink">パスワードをお忘れの方はこちら</span></div>
-  <div class="login-foot">はじめての方は <a href="register.html" style="color:var(--gold-dark);font-weight:700">新規会員登録</a><br>ログインできない場合は事務局にご連絡ください。</div>
+  <div class="login-foot">ログインできない場合は事務局にご連絡ください。</div>
 </div>
 
 <script type="module">
   import { signInWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
   import { auth } from './firebase-config.js';
 
-  // 既にログイン済みならイベント一覧へ
-  onAuthStateChanged(auth, (user) => { if (user) location.href = 'index.html'; });
+  // ログイン後の戻り先（?next=admin.html など。アプリ内のページ名だけ許可）
+  const nextParam = new URLSearchParams(location.search).get('next') || '';
+  const NEXT_OK = ['index.html', 'admin.html', 'members.html', 'profile.html'];
+  const nextUrl = NEXT_OK.includes(nextParam.split('?')[0]) ? nextParam : 'index.html';
+  // 既にログイン済みなら戻り先へ
+  onAuthStateChanged(auth, (user) => { if (user) location.href = nextUrl; });
 
   const errEl = document.getElementById('err');
   async function doLogin() {
@@ -54,7 +58,7 @@
     btn.disabled = true; btn.textContent = 'ログイン中...';
     try {
       await signInWithEmailAndPassword(auth, email, pw);
-      location.href = 'index.html';
+      location.href = nextUrl;
     } catch (e) {
       const msg = {
         'auth/invalid-credential': 'メールアドレスまたはパスワードが正しくありません',

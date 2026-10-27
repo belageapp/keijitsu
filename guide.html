@@ -60,23 +60,23 @@
 
   <div class="sec-h">試作でできること（例）</div>
   <div class="feat-grid">
-    <div class="feat"><div class="ico">📅</div><h3>イベント一覧・詳細</h3><p>広島チームの会と経実会のイベントを「① 交流・対話・仲間づくり」「② 学び・実践・伝播」の分類ごとに一覧表示。内容やチラシもその場で確認できます。<span data-feature="apply">申込（調整さん・経実会申込サイト）へもボタンから進めます。</span></p></div>
+    <div class="feat"><div class="ico">📅</div><h3>イベント一覧・詳細</h3><p>広島チームの会と経実会のイベントを「① 交流・対話・仲間づくり」「② 学び・実践・伝播」の分類ごとに一覧表示。イベントの一覧と詳細はログインなしで誰でも見られます。内容やチラシもその場で確認できます。<span data-feature="apply">申込（調整さん・経実会申込サイト）へもボタンから進めます。</span></p></div>
     <div class="feat" data-feature="attendance"><div class="ico">✋</div><h3>出欠登録</h3><p>本会・懇親会それぞれに出欠を登録。ゲストや自社の社員の参加、その他出席者も登録できます。</p></div>
     <div class="feat" data-feature="attendance"><div class="ico">🎯</div><h3>動員目標の見える化</h3><p>広島主催の主要イベントは、会員・ゲストの動員目標と達成率をゲージで表示。会の盛り上げに。</p></div>
-    <div class="feat"><div class="ico">👥</div><h3>会員名簿</h3><p>会社名・志・事業内容・業種を登録して共有。業種バッジやキーワードで“つながりたい仲間”を探せます。</p></div>
+    <div class="feat" data-feature="members"><div class="ico">👥</div><h3>会員名簿</h3><p>会社名・志・事業内容・業種を登録して共有。業種バッジやキーワードで“つながりたい仲間”を探せます。</p></div>
     <div class="feat"><div class="ico">📊</div><h3>役割分担表</h3><p>これまでのGoogleスプレッドシートもアプリ内に表示。役割の割り当ても登録できます。</p></div>
     <div class="feat"><div class="ico">📸</div><h3>お顔写真</h3><p>その場でカメラ撮影＆トリミングして登録。顔の見える名簿になります。</p></div>
   </div>
 
-  <div class="sec-h">試してみる（かんたん2ステップ）</div>
+  <div class="sec-h">見てみる</div>
   <div class="steps">
-    <div class="step"><h3>お試し登録する</h3><p>下のURLを開き、お名前・メールアドレス・パスワードを入力して登録します。（試作品のためのお試し登録です）</p></div>
-    <div class="step"><h3>承認されたらログイン</h3><p>事務局が承認するとお試し利用できます。以降はご登録のメールアドレスとパスワードでログインします。</p></div>
+    <div class="step"><h3>イベントの予定を見る</h3><p>下のURLを開くだけ。ログインは要りません。月ごと・分類ごとに絞って見られます。</p></div>
+    <div class="step"><h3>会員管理（管理者のみ）</h3><p>メニューの「会員管理」を押すとログイン画面が出ます。管理者のメールアドレスとパスワードでログインします。</p></div>
   </div>
 
   <div class="urlbox">
-    <div class="label">▼ お試し登録・ログインはこちら</div>
-    <a href="https://belageapp.github.io/keijitsu/login.html">belageapp.github.io/keijitsu/</a>
+    <div class="label">▼ アプリはこちら</div>
+    <a href="https://belageapp.github.io/keijitsu/">belageapp.github.io/keijitsu/</a>
   </div>
 
   <div class="sec-h">ぜひご意見をお聞かせください</div>
@@ -95,7 +95,7 @@
   </div>
 </div>
 <script type="module">
-  import { FEATURES } from './constants.js?v=1.5.0';
+  import { FEATURES } from './constants.js?v=1.6.0';
   document.querySelectorAll('[data-feature]').forEach(el => { if (!FEATURES[el.dataset.feature]) el.remove(); });
 </script>
 </body>

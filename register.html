@@ -21,7 +21,7 @@
 </style>
 </head>
 <body>
-<div class="box" id="box">
+<div class="box" id="box" data-feature="register">
   <div class="brand">経営実践研究会 広島<span class="en">HIROSHIMA MEMBERS</span></div>
   <h1>広島会員 情報共有アプリ 新規登録</h1>
   <div class="lead">こちらは<strong>経営実践研究会 広島会員 専用</strong>の情報共有アプリです。<br>（本部アプリとは別のシステムです）<br><br>ご登録後、そのままログインしてご利用いただけます。</div>
@@ -110,6 +110,16 @@
         </div>
         <a href="login.html" class="btn btn-primary" style="display:inline-block;margin-top:22px;text-decoration:none">ログイン画面へ</a>
       </div>`;
+  }
+</script>
+<script type="module">
+  import { FEATURES } from './constants.js?v=1.6.0';
+  if (!FEATURES.register) {
+    document.getElementById('box').innerHTML = `
+      <div class="brand">経営実践研究会 広島<span class="en">HIROSHIMA MEMBERS</span></div>
+      <h1>新規登録は受け付けていません</h1>
+      <div class="lead">現在、このアプリの新規会員登録は行っていません。<br>イベントの予定はログインなしでご覧いただけます。</div>
+      <a href="index.html" class="btn btn-primary" style="display:inline-block;text-decoration:none;margin-top:8px">イベント一覧へ</a>`;
   }
 </script>
 </body>

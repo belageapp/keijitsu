@@ -64,10 +64,11 @@ service cloud.firestore {
     }
 
     // ── events ─────────────────────────────────────────────
-    // 閲覧：会員全員／作成・削除・編集：editor 以上
+    // 閲覧：誰でも（ログイン不要。2026-10-27 代表の決定）／作成・削除・編集：editor 以上
     // 例外：参加人数の集計(summary)フィールドのみ、会員も更新可（出欠登録時の自動集計用）
+    // ※ 出欠(attendance)サブコレクションは従来どおり会員のみ
     match /events/{eventId} {
-      allow read: if isActive();
+      allow read: if true;
       allow create, delete: if isEditor();
       allow update: if isEditor()
         || (isActive()

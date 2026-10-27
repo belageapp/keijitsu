@@ -157,8 +157,8 @@
   import { ref, uploadBytes, getDownloadURL, deleteObject }
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
   import { db, storage } from './firebase-config.js';
-  import { requireAuth, renderTopbar, canEdit } from './auth.js';
-  import { EVENT_TYPES, eventTypeBadge, INDUSTRIES, industryBadge, OTHER_CATEGORIES, MOBILIZATION_TYPES, eventTypeOptionsInner, eventCategoryBadge, eventCategoryOptionsInner, applySiteName, FEATURES } from './constants.js?v=1.5.0';
+  import { optionalAuth, renderTopbar, canEdit } from './auth.js?v=1.6.0';
+  import { EVENT_TYPES, eventTypeBadge, INDUSTRIES, industryBadge, OTHER_CATEGORIES, MOBILIZATION_TYPES, eventTypeOptionsInner, eventCategoryBadge, eventCategoryOptionsInner, applySiteName, FEATURES } from './constants.js?v=1.6.0';
 
   // 種別セレクトを構築
   document.getElementById('ee-type').innerHTML =
@@ -216,17 +216,18 @@
 
   (async () => {
     if (!eventId) { location.href = 'index.html'; return; }
-    me = await requireAuth();
+    me = await optionalAuth();   // ログインなしでも閲覧可（役割タブ・出欠は会員のみ）
     renderTopbar(me, 'events');
     await loadAll();
   })();
 
   async function loadAll() {
     try {
+      // 未ログインは events のみ読める（users・attendance は会員のみ）
       const [evSnap, memSnap, attSnap] = await Promise.all([
         getDoc(doc(db, 'events', eventId)),
-        getDocs(collection(db, 'users')),
-        getDocs(collection(db, 'events', eventId, 'attendance')),
+        me ? getDocs(collection(db, 'users')) : Promise.resolve({ docs: [] }),
+        me ? getDocs(collection(db, 'events', eventId, 'attendance')) : Promise.resolve({ docs: [] }),
       ]);
       if (!evSnap.exists()) { document.getElementById('content').innerHTML = '<div class="empty">イベントが見つかりません</div>'; return; }
       ev = { id: evSnap.id, ...evSnap.data() };
@@ -309,7 +310,9 @@
       { key:'attendance', label:'出欠' },
       { key:'roles', label:'役割' },
       { key:'files', label:'資料' },
-    ].filter(t => FEATURES.attendance || t.key !== 'attendance');
+    ].filter(t => FEATURES.attendance || t.key !== 'attendance')
+     .filter(t => me || t.key !== 'roles');   // 役割（会員名が出る）はログイン時のみ
+    if (!me && currentTab === 'roles') currentTab = 'overview';
     if (!FEATURES.attendance && currentTab === 'attendance') currentTab = 'overview';
     document.getElementById('content').innerHTML = `
       <div class="card ev-hero">

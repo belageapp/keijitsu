@@ -116,8 +116,8 @@
   import { collection, getDocs, addDoc, updateDoc, doc, serverTimestamp, query, orderBy }
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
   import { db } from './firebase-config.js';
-  import { requireAuth, renderTopbar, canEdit } from './auth.js';
-  import { EVENT_TYPES, eventTypeBadge, MOBILIZATION_TYPES, eventTypeOptionsInner, EVENT_CATEGORIES, eventCategory, eventCategoryBadge, eventCategoryOptionsInner, HQ_EVENTS_URL, applySiteName, FEATURES } from './constants.js?v=1.5.0';
+  import { optionalAuth, renderTopbar, canEdit } from './auth.js?v=1.6.0';
+  import { EVENT_TYPES, eventTypeBadge, MOBILIZATION_TYPES, eventTypeOptionsInner, EVENT_CATEGORIES, eventCategory, eventCategoryBadge, eventCategoryOptionsInner, HQ_EVENTS_URL, applySiteName, FEATURES } from './constants.js?v=1.6.0';
 
   let me = null;
   let allEvents = [];
@@ -193,7 +193,7 @@
   }
 
   (async () => {
-    me = await requireAuth();
+    me = await optionalAuth();   // ログインなしでも閲覧可
     renderTopbar(me, 'events');
     if (canEdit(me)) document.getElementById('addBtn').style.display = 'inline-block';
     await loadEvents();
