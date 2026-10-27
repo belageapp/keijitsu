@@ -26,6 +26,34 @@ export const EVENT_TYPES = [
   'その他',
 ];
 
+// イベントの分類（予定図の括り。文言は kj の正本 2026-11_予定図_文言_v2.1 に合わせる）
+export const EVENT_CATEGORIES = [
+  { key:'exchange', label:'① 交流・対話・仲間づくり', sub:'広島チームの会｜申込は調整さん', bg:'#E1F1E7', color:'#1F6E48' },
+  { key:'learning', label:'② 学び・実践・伝播',       sub:'経実会のイベント｜申込は申込サイト', bg:'#DCEBFF', color:'#12508C' },
+];
+export function eventCategory(key) {
+  return EVENT_CATEGORIES.find(c => c.key === key) || null;
+}
+export function eventCategoryOptionsInner() {
+  return EVENT_CATEGORIES.map(c => `<option value="${c.key}">${c.label}（${c.sub.split('｜')[0]}）</option>`).join('');
+}
+export function eventCategoryBadge(key) {
+  const c = eventCategory(key);
+  if (!c) return '';
+  return `<span style="display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;background:${c.bg};color:${c.color}">${c.label}</span>`;
+}
+
+// 本部（経実会）のイベント一覧
+export const HQ_EVENTS_URL = 'https://keijitsu.shikuminet.jp/events/';
+
+// 申込URLの表示名（URLのドメインから判定）
+export function applySiteName(url) {
+  if (!url) return '';
+  if (/chouseisan\.com/.test(url)) return '調整さん';
+  if (/keijitsu\.shikuminet\.jp/.test(url)) return '経実会申込サイト';
+  return '申込サイト';
+}
+
 // 動員目標・進捗バーを表示する種別（この4種別のみ。オリエンin広島は対象外）
 export const MOBILIZATION_TYPES = ['特別講演in広島', '定例会in広島', '交流会in広島', '近未来in広島'];
 

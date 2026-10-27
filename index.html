@@ -7,12 +7,13 @@
 <title>イベント一覧｜経営実践研究会 広島会員 情報共有アプリ</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  .source-tabs{display:flex;gap:10px;margin-bottom:18px}
-  .source-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:14px 10px;border-radius:12px;border:1.5px solid var(--border);background:#fff;font-weight:800;font-size:14px;color:var(--ink-mid);cursor:pointer;text-align:center;transition:.15s;text-decoration:none}
-  .source-tab .sub{font-size:10px;font-weight:600;color:var(--ink-light)}
-  .source-tab:hover{border-color:var(--gold);color:var(--gold-dark)}
-  .source-tab.active{background:linear-gradient(135deg,#3BA3E6,#1C6BA8);border-color:transparent;color:#fff}
-  .source-tab.active .sub{color:rgba(255,255,255,.85)}
+  .cat-head{display:flex;flex-direction:column;gap:2px;padding:12px 16px;background:#F7FAFD;border-bottom:1px solid var(--border);border-top:1px solid var(--border)}
+  .cat-head:first-child{border-top:none}
+  .cat-head .t{font-size:14px;font-weight:800}
+  .cat-head .s{font-size:11px;font-weight:600;color:var(--ink-mid)}
+  .hq-link{display:block;margin-top:14px;text-align:center;font-size:12px;font-weight:700;color:var(--ink-mid);text-decoration:none}
+  .hq-link:hover{color:var(--gold-dark)}
+  .ev-apply{color:var(--indigo);text-decoration:underline;font-weight:700}
   .filter-tabs{display:flex;gap:6px;margin-bottom:16px}
   .filter-tab{padding:6px 14px;border:1.5px solid var(--border);border-radius:20px;background:#fff;font-size:12px;font-weight:700;color:var(--ink-mid);cursor:pointer}
   .filter-tab.active{background:var(--indigo);border-color:var(--indigo);color:#fff}
@@ -32,12 +33,8 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="source-tabs">
-    <div class="source-tab active">🏯 広島管理イベント<span class="sub">このアプリで管理</span></div>
-    <a class="source-tab" href="https://keijitsu.shikuminet.jp/events/" target="_blank" rel="noopener">🏛 本部管理イベント<span class="sub">本部サイトへ ↗</span></a>
-  </div>
   <div class="page-head">
-    <div class="page-title"><span class="ico">📅</span>広島管理イベント 一覧</div>
+    <div class="page-title"><span class="ico">📅</span>イベント一覧</div>
     <button class="btn btn-primary" id="addBtn" style="display:none">＋ イベント追加</button>
   </div>
   <div style="margin-bottom:12px"><input id="ev-search" placeholder="🔍 タイトル・種別・場所・内容で検索" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;outline:none"></div>
@@ -45,9 +42,11 @@
     <div class="filter-tab active" data-f="upcoming">開催予定</div>
     <div class="filter-tab" data-f="past">過去</div>
     <div class="filter-tab" data-f="all">すべて</div>
-    <select id="type-filter" style="margin-left:auto;padding:6px 12px;border:1.5px solid var(--border);border-radius:20px;font-family:inherit;font-size:12px;font-weight:700;color:var(--ink-mid);background:#fff"></select>
+    <select id="cat-filter" style="margin-left:auto;padding:6px 12px;border:1.5px solid var(--border);border-radius:20px;font-family:inherit;font-size:12px;font-weight:700;color:var(--ink-mid);background:#fff"></select>
+    <select id="type-filter" style="padding:6px 12px;border:1.5px solid var(--border);border-radius:20px;font-family:inherit;font-size:12px;font-weight:700;color:var(--ink-mid);background:#fff"></select>
   </div>
-  <div class="card"><div id="list"><div class="loading">読み込み中...</div></div></div>
+  <div class="card" style="padding:0;overflow:hidden"><div id="list"><div class="loading">読み込み中...</div></div></div>
+  <a class="hq-link" id="hq-link" href="#" target="_blank" rel="noopener">🏛 本部サイトのイベント一覧（全国）を見る ↗</a>
 </div>
 
 <!-- イベント追加/編集モーダル -->
@@ -56,6 +55,7 @@
     <div class="modal-title" id="evModalTitle">イベント追加</div>
     <input type="hidden" id="ev-id">
     <div class="field"><label>タイトル <span style="color:var(--red)">*</span></label><input id="ev-title" placeholder="例：7月例会"></div>
+    <div class="field"><label>分類</label><select id="ev-category"></select><div class="hint">一覧では分類ごとに分けて表示されます。</div></div>
     <div class="field"><label>イベント種別</label><select id="ev-type"></select></div>
     <div class="field" style="display:flex;gap:10px">
       <div style="flex:1"><label>開始日時 <span style="color:var(--red)">*</span></label><input type="datetime-local" id="ev-start"></div>
@@ -64,6 +64,7 @@
     <div class="field"><label>開催場所</label><input id="ev-location" placeholder="例：〇〇会館 3F"></div>
     <div class="field"><label>内容・概要</label><textarea id="ev-desc" placeholder="イベントの内容を入力"></textarea></div>
     <div class="field"><label>役割分担表（GoogleスプレッドシートURL）</label><input id="ev-sheet" placeholder="https://docs.google.com/spreadsheets/..."><div class="hint">「リンクを知っている全員が閲覧可」または「ウェブに公開」で詳細画面に埋め込み表示されます。特定のタブを表示したい場合は、そのタブを開いた状態のURL（末尾 #gid=…）を貼り付けてください。</div></div>
+    <div class="field"><label>申込URL（調整さん・経実会申込サイトなど）</label><input id="ev-apply" placeholder="https://chouseisan.com/... または https://keijitsu.shikuminet.jp/events/..."><div class="hint">一覧と詳細画面に「申込」ボタンとして表示されます。</div></div>
     <div class="field"><label>K-PORTAL 決済URL（本部決済サイト）</label><input id="ev-kportal" placeholder="https://..."><div class="hint">イベントごとの本部決済ページのURL。詳細画面に決済ボタンとして表示されます。</div></div>
     <div class="field" id="ev-goal-wrap" style="display:none;gap:10px">
       <div style="flex:1"><label>本会 会員目標（人）</label><input type="number" id="ev-goal-mem" min="0" placeholder="例：40"></div>
@@ -83,12 +84,13 @@
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
   import { db } from './firebase-config.js';
   import { requireAuth, renderTopbar, canEdit } from './auth.js';
-  import { EVENT_TYPES, eventTypeBadge, MOBILIZATION_TYPES, eventTypeOptionsInner } from './constants.js';
+  import { EVENT_TYPES, eventTypeBadge, MOBILIZATION_TYPES, eventTypeOptionsInner, EVENT_CATEGORIES, eventCategory, eventCategoryOptionsInner, HQ_EVENTS_URL, applySiteName } from './constants.js';
 
   let me = null;
   let allEvents = [];
   let filter = 'upcoming';
   let typeFilter = '';
+  let catFilter = '';
   let evKw = '';
 
   // 種別セレクトを構築（モーダル用・絞り込み用）
@@ -97,6 +99,12 @@
   document.getElementById('type-filter').innerHTML =
     '<option value="">すべての種別</option>' + eventTypeOptionsInner();
   document.getElementById('type-filter').onchange = (e) => { typeFilter = e.target.value; render(); };
+  document.getElementById('ev-category').innerHTML =
+    '<option value="">（未設定）</option>' + eventCategoryOptionsInner();
+  document.getElementById('cat-filter').innerHTML =
+    '<option value="">すべての分類</option>' + EVENT_CATEGORIES.map(c => `<option value="${c.key}">${c.label}</option>`).join('');
+  document.getElementById('cat-filter').onchange = (e) => { catFilter = e.target.value; render(); };
+  document.getElementById('hq-link').href = HQ_EVENTS_URL;
   document.getElementById('ev-search').oninput = (e) => { evKw = e.target.value.toLowerCase().trim(); render(); };
 
   const WD = ['日','月','火','水','木','金','土'];
@@ -132,6 +140,7 @@
     const el = document.getElementById('list');
     const now = new Date();
     let rows = allEvents.map(ev => ({ ...ev, _d: fmtDate(ev.startAt) }));
+    if (catFilter) rows = rows.filter(r => (r.category || '') === catFilter);
     if (typeFilter) rows = rows.filter(r => r.eventType === typeFilter);
     if (evKw) rows = rows.filter(r => [r.title, r.eventType, r.location, r.description].filter(Boolean).join(' ').toLowerCase().includes(evKw));
     if (filter === 'upcoming') rows = rows.filter(r => r._d && r._d >= new Date(now.toDateString())).sort((a,b)=>a._d-b._d);
@@ -140,7 +149,17 @@
 
     if (!rows.length) { el.innerHTML = '<div class="empty">該当するイベントはありません</div>'; return; }
 
-    el.innerHTML = rows.map(ev => {
+    // 分類ごとに区切って表示（①→②→未分類の順。並びは各分類の中で日付順）
+    const groups = [...EVENT_CATEGORIES.map(c => ({ ...c, rows: rows.filter(r => r.category === c.key) })),
+                    { key:'', label:'その他のイベント', sub:'分類が未設定のイベント', rows: rows.filter(r => !eventCategory(r.category)) }]
+                   .filter(g => g.rows.length);
+    el.innerHTML = groups.map(g => `
+      <div class="cat-head" style="${g.color ? `color:${g.color};background:${g.bg}66` : ''}"><span class="t">${g.label}</span><span class="s">${g.sub}</span></div>
+      ${g.rows.map(itemHtml).join('')}`).join('');
+  }
+
+  function itemHtml(ev) {
+    const now = new Date();
       const d = ev._d;
       const past = d && d < now;
       const dateBox = d ? `
@@ -159,14 +178,15 @@
             ${time ? `<span>🕐 ${time}</span>` : ''}
             ${ev.location ? `<span>📍 ${esc(ev.location)}</span>` : ''}
             ${past ? '<span class="badge badge-gray">終了</span>' : '<span class="badge badge-gold">予定</span>'}
+            ${ev.applyUrl && !past ? `<span>📝 <a class="ev-apply" href="${escAttr(ev.applyUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">申込（${applySiteName(ev.applyUrl)}）↗</a></span>` : ''}
           </div>
           ${summaryLineHtml(ev)}
         </div>
       </div>`;
-    }).join('');
   }
 
   function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function escAttr(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
 
   function miniBar(label, actual, goal){
     const pct = goal>0 ? Math.round(actual/goal*100) : 0;
@@ -210,12 +230,14 @@
     document.getElementById('evModalTitle').textContent = ev ? 'イベント編集' : 'イベント追加';
     document.getElementById('ev-id').value = ev?.id || '';
     document.getElementById('ev-title').value = ev?.title || '';
+    document.getElementById('ev-category').value = ev?.category || '';
     document.getElementById('ev-type').value = ev?.eventType || '';
     document.getElementById('ev-start').value = ev?.startAt ? toLocalInput(fmtDate(ev.startAt)) : '';
     document.getElementById('ev-end').value = ev?.endAt ? toLocalInput(fmtDate(ev.endAt)) : '';
     document.getElementById('ev-location').value = ev?.location || '';
     document.getElementById('ev-desc').value = ev?.description || '';
     document.getElementById('ev-sheet').value = ev?.roleSheetUrl || '';
+    document.getElementById('ev-apply').value = ev?.applyUrl || '';
     document.getElementById('ev-kportal').value = ev?.kportalUrl || '';
     document.getElementById('ev-goal-mem').value = ev?.goalMainMembers ?? '';
     document.getElementById('ev-goal-guest').value = ev?.goalMainGuests ?? '';
@@ -238,12 +260,14 @@
     const endStr = document.getElementById('ev-end').value;
     const data = {
       title,
+      category: document.getElementById('ev-category').value,
       eventType: document.getElementById('ev-type').value,
       startAt: new Date(startStr),
       endAt: endStr ? new Date(endStr) : null,
       location: document.getElementById('ev-location').value.trim(),
       description: document.getElementById('ev-desc').value.trim(),
       roleSheetUrl: document.getElementById('ev-sheet').value.trim(),
+      applyUrl: document.getElementById('ev-apply').value.trim(),
       kportalUrl: document.getElementById('ev-kportal').value.trim(),
       goalMainMembers: parseInt(document.getElementById('ev-goal-mem').value) || 0,
       goalMainGuests: parseInt(document.getElementById('ev-goal-guest').value) || 0,

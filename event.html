@@ -95,6 +95,7 @@
   <div class="modal">
     <div class="modal-title">イベント編集</div>
     <div class="field"><label>タイトル <span style="color:var(--red)">*</span></label><input id="ee-title"></div>
+    <div class="field"><label>分類</label><select id="ee-category"></select><div class="hint">一覧では分類ごとに分けて表示されます。</div></div>
     <div class="field"><label>イベント種別</label><select id="ee-type"></select></div>
     <div class="field" style="display:flex;gap:10px">
       <div style="flex:1"><label>開始日時 <span style="color:var(--red)">*</span></label><input type="datetime-local" id="ee-start"></div>
@@ -103,6 +104,7 @@
     <div class="field"><label>開催場所</label><input id="ee-location"></div>
     <div class="field"><label>内容・概要</label><textarea id="ee-desc"></textarea></div>
     <div class="field"><label>役割分担表（GoogleスプレッドシートURL）</label><input id="ee-sheet" placeholder="https://docs.google.com/spreadsheets/..."><div class="hint">「リンクを知っている全員が閲覧可」または「ウェブに公開」で埋め込み表示されます。特定のタブを表示したい場合は、そのタブを開いた状態のURL（末尾 #gid=…）を貼り付けてください。</div></div>
+    <div class="field"><label>申込URL（調整さん・経実会申込サイトなど）</label><input id="ee-apply" placeholder="https://chouseisan.com/... または https://keijitsu.shikuminet.jp/events/..."><div class="hint">一覧と詳細画面に「申込」ボタンとして表示されます。</div></div>
     <div class="field"><label>K-PORTAL 決済URL（本部決済サイト）</label><input id="ee-kportal" placeholder="https://..."><div class="hint">イベントごとの本部決済ページのURL。出欠タブに決済ボタンとして表示されます。</div></div>
     <div class="field" id="ee-goal-wrap" style="display:none;gap:10px">
       <div style="flex:1"><label>本会 会員目標（人）</label><input type="number" id="ee-goal-mem" min="0"></div>
@@ -155,11 +157,13 @@
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
   import { db, storage } from './firebase-config.js';
   import { requireAuth, renderTopbar, canEdit } from './auth.js';
-  import { EVENT_TYPES, eventTypeBadge, INDUSTRIES, industryBadge, OTHER_CATEGORIES, MOBILIZATION_TYPES, eventTypeOptionsInner } from './constants.js';
+  import { EVENT_TYPES, eventTypeBadge, INDUSTRIES, industryBadge, OTHER_CATEGORIES, MOBILIZATION_TYPES, eventTypeOptionsInner, eventCategoryBadge, eventCategoryOptionsInner, applySiteName } from './constants.js';
 
   // 種別セレクトを構築
   document.getElementById('ee-type').innerHTML =
     '<option value="">（未設定）</option>' + eventTypeOptionsInner();
+  document.getElementById('ee-category').innerHTML =
+    '<option value="">（未設定）</option>' + eventCategoryOptionsInner();
 
   const eventId = new URLSearchParams(location.search).get('id');
   let me = null, ev = null, members = [], memberMap = {}, attendance = [];
@@ -308,7 +312,7 @@
       <div class="card ev-hero">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
           <div>
-            ${ev.eventType ? `<div style="margin-bottom:6px">${eventTypeBadge(ev.eventType)}</div>` : ''}
+            ${(ev.category || ev.eventType) ? `<div style="margin-bottom:6px;display:flex;gap:6px;flex-wrap:wrap">${eventCategoryBadge(ev.category)}${eventTypeBadge(ev.eventType)}</div>` : ''}
             <h1>${esc(ev.title)}</h1>
           </div>
           ${editable ? `<div style="display:flex;gap:6px;flex-shrink:0">
@@ -318,6 +322,7 @@
         </div>
         <div class="meta-row">🗓 ${fmtDateTime(ev.startAt)}${ev.endAt ? ' 〜 ' + fmtDateTime(ev.endAt).split(') ')[1] : ''}</div>
         ${ev.location ? `<div class="meta-row">📍 ${esc(ev.location)}</div>` : ''}
+        ${applyBtnHtml('margin-top:10px')}
       </div>
       ${summaryPanelHtml(computeSummary())}
       <div class="ev-tabs">
@@ -339,6 +344,11 @@
     else if (currentTab === 'attendance') { panel.innerHTML = attendanceHtml(editable); bindAttendance(editable); }
     else if (currentTab === 'roles') { panel.innerHTML = rolesHtml(editable); bindRoles(editable); }
     else if (currentTab === 'files') { panel.innerHTML = filesHtml(editable); bindFiles(editable); }
+  }
+
+  function applyBtnHtml(style = '') {
+    if (!ev.applyUrl) return '';
+    return `<div style="${style}"><a href="${escAttr(ev.applyUrl)}" target="_blank" rel="noopener" class="btn btn-primary btn-sm" style="text-decoration:none">📝 申込（${applySiteName(ev.applyUrl)}）↗</a></div>`;
   }
 
   // ── 概要タブ ──
@@ -391,6 +401,7 @@
         <div class="sec-title"><span class="ico">✋</span>あなたの参加登録</div>
         <div class="att-field"><label>本会 出欠</label>${segHtml('main', mine.main || '')}</div>
         <div class="att-field"><label>懇親会 出欠</label>${segHtml('social', mine.social || '')}</div>
+        ${applyBtnHtml('margin-bottom:10px')}
         ${ev.kportalUrl ? `<div class="att-field"><a href="${escAttr(ev.kportalUrl)}" target="_blank" rel="noopener" class="btn btn-primary btn-sm" style="text-decoration:none">💳 K-PORTALで決済する ↗</a></div>` : ''}
         <div class="att-field"><label class="chk" style="font-size:13px"><input type="checkbox" id="my-settled" ${mine.settled?'checked':''}>本部決済システムで決済済</label></div>
 
@@ -684,12 +695,14 @@
   }
   function openEditModal() {
     document.getElementById('ee-title').value = ev.title || '';
+    document.getElementById('ee-category').value = ev.category || '';
     document.getElementById('ee-type').value = ev.eventType || '';
     document.getElementById('ee-start').value = toLocalInput(ev.startAt);
     document.getElementById('ee-end').value = toLocalInput(ev.endAt);
     document.getElementById('ee-location').value = ev.location || '';
     document.getElementById('ee-desc').value = ev.description || '';
     document.getElementById('ee-sheet').value = ev.roleSheetUrl || '';
+    document.getElementById('ee-apply').value = ev.applyUrl || '';
     document.getElementById('ee-kportal').value = ev.kportalUrl || '';
     document.getElementById('ee-goal-mem').value = ev.goalMainMembers ?? '';
     document.getElementById('ee-goal-guest').value = ev.goalMainGuests ?? '';
@@ -710,12 +723,14 @@
     try {
       const upd = {
         title,
+        category: document.getElementById('ee-category').value,
         eventType: document.getElementById('ee-type').value,
         startAt: new Date(startStr),
         endAt: endStr ? new Date(endStr) : null,
         location: document.getElementById('ee-location').value.trim(),
         description: document.getElementById('ee-desc').value.trim(),
         roleSheetUrl: document.getElementById('ee-sheet').value.trim(),
+        applyUrl: document.getElementById('ee-apply').value.trim(),
         kportalUrl: document.getElementById('ee-kportal').value.trim(),
         goalMainMembers: parseInt(document.getElementById('ee-goal-mem').value) || 0,
         goalMainGuests: parseInt(document.getElementById('ee-goal-guest').value) || 0,
