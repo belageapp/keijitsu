@@ -11,6 +11,15 @@
   .cat-head:first-child{border-top:none}
   .cat-head .t{font-size:14px;font-weight:800}
   .cat-head .s{font-size:11px;font-weight:600;color:var(--ink-mid)}
+  .month-head{display:flex;align-items:baseline;gap:8px;padding:12px 16px 8px;background:linear-gradient(90deg,#EAF4FC,#F7FAFD);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+  .month-head:first-child{border-top:none}
+  .month-head .y{font-size:12px;font-weight:700;color:var(--ink-mid)}
+  .month-head .m{font-size:20px;font-weight:900;color:var(--indigo);letter-spacing:.02em}
+  .month-head .n{font-size:11px;font-weight:600;color:var(--ink-light);margin-left:auto}
+  .view-seg{display:inline-flex;border:1.5px solid var(--border);border-radius:20px;overflow:hidden;margin-left:auto}
+  .view-seg div{padding:6px 12px;font-size:12px;font-weight:700;color:var(--ink-mid);cursor:pointer;background:#fff}
+  .view-seg div.active{background:var(--indigo);color:#fff}
+  .sel{padding:6px 12px;border:1.5px solid var(--border);border-radius:20px;font-family:inherit;font-size:12px;font-weight:700;color:var(--ink-mid);background:#fff}
   .hq-link{display:block;margin-top:14px;text-align:center;font-size:12px;font-weight:700;color:var(--ink-mid);text-decoration:none}
   .hq-link:hover{color:var(--gold-dark)}
   .ev-apply{color:var(--indigo);text-decoration:underline;font-weight:700}
@@ -21,8 +30,8 @@
   .event-item:last-child{border-bottom:none}
   .event-item:hover{background:#F4FAFE}
   .ev-date{flex-shrink:0;width:60px;text-align:center;border-right:2px solid var(--gold);padding-right:12px}
-  .ev-date .m{font-size:11px;color:var(--gold-dark);font-weight:700}
-  .ev-date .d{font-size:24px;font-weight:800;color:var(--ink);line-height:1.1}
+  .ev-date .m{font-size:14px;color:var(--gold-dark);font-weight:900;line-height:1.1}
+  .ev-date .d{font-size:26px;font-weight:800;color:var(--ink);line-height:1.1}
   .ev-date .w{font-size:11px;color:var(--ink-light)}
   .ev-main{flex:1;min-width:0}
   .ev-title{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:4px}
@@ -38,12 +47,16 @@
     <button class="btn btn-primary" id="addBtn" style="display:none">＋ イベント追加</button>
   </div>
   <div style="margin-bottom:12px"><input id="ev-search" placeholder="🔍 タイトル・種別・場所・内容で検索" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;outline:none"></div>
-  <div class="filter-tabs" style="align-items:center">
+  <div class="filter-tabs" style="align-items:center;margin-bottom:8px">
     <div class="filter-tab active" data-f="upcoming">開催予定</div>
     <div class="filter-tab" data-f="past">過去</div>
     <div class="filter-tab" data-f="all">すべて</div>
-    <select id="cat-filter" style="margin-left:auto;padding:6px 12px;border:1.5px solid var(--border);border-radius:20px;font-family:inherit;font-size:12px;font-weight:700;color:var(--ink-mid);background:#fff"></select>
-    <select id="type-filter" style="padding:6px 12px;border:1.5px solid var(--border);border-radius:20px;font-family:inherit;font-size:12px;font-weight:700;color:var(--ink-mid);background:#fff"></select>
+    <div class="view-seg" id="view-seg"><div class="active" data-v="time">時系列</div><div data-v="cat">分類別</div></div>
+  </div>
+  <div class="filter-tabs" style="align-items:center;flex-wrap:wrap">
+    <select id="month-filter" class="sel"></select>
+    <select id="cat-filter" class="sel"></select>
+    <select id="type-filter" class="sel"></select>
   </div>
   <div class="card" style="padding:0;overflow:hidden"><div id="list"><div class="loading">読み込み中...</div></div></div>
   <a class="hq-link" id="hq-link" href="#" target="_blank" rel="noopener">🏛 本部サイトのイベント一覧（全国）を見る ↗</a>
@@ -84,13 +97,15 @@
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
   import { db } from './firebase-config.js';
   import { requireAuth, renderTopbar, canEdit } from './auth.js';
-  import { EVENT_TYPES, eventTypeBadge, MOBILIZATION_TYPES, eventTypeOptionsInner, EVENT_CATEGORIES, eventCategory, eventCategoryOptionsInner, HQ_EVENTS_URL, applySiteName } from './constants.js?v=1.4.0';
+  import { EVENT_TYPES, eventTypeBadge, MOBILIZATION_TYPES, eventTypeOptionsInner, EVENT_CATEGORIES, eventCategory, eventCategoryBadge, eventCategoryOptionsInner, HQ_EVENTS_URL, applySiteName } from './constants.js?v=1.4.0';
 
   let me = null;
   let allEvents = [];
   let filter = 'upcoming';
   let typeFilter = '';
   let catFilter = '';
+  let monthFilter = '';
+  let view = 'time';
   let evKw = '';
 
   // 種別セレクトを構築（モーダル用・絞り込み用）
@@ -104,6 +119,20 @@
   document.getElementById('cat-filter').innerHTML =
     '<option value="">すべての分類</option>' + EVENT_CATEGORIES.map(c => `<option value="${c.key}">${c.label}</option>`).join('');
   document.getElementById('cat-filter').onchange = (e) => { catFilter = e.target.value; render(); };
+  document.getElementById('month-filter').onchange = (e) => { monthFilter = e.target.value; render(); };
+  document.querySelectorAll('#view-seg div').forEach(b => b.onclick = () => {
+    document.querySelectorAll('#view-seg div').forEach(x => x.classList.remove('active'));
+    b.classList.add('active'); view = b.dataset.v; render();
+  });
+  const monthKey = d => d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` : '';
+  const monthLabel = k => k ? `${k.slice(0,4)}年${parseInt(k.slice(5),10)}月` : '';
+  function buildMonthFilter() {
+    const keys = [...new Set(allEvents.map(ev => monthKey(fmtDate(ev.startAt))).filter(Boolean))].sort();
+    const sel = document.getElementById('month-filter');
+    sel.innerHTML = '<option value="">すべての月</option>' + keys.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join('');
+    if (!keys.includes(monthFilter)) monthFilter = '';
+    sel.value = monthFilter;
+  }
   document.getElementById('hq-link').href = HQ_EVENTS_URL;
   document.getElementById('ev-search').oninput = (e) => { evKw = e.target.value.toLowerCase().trim(); render(); };
 
@@ -130,6 +159,7 @@
     try {
       const snap = await getDocs(query(collection(db, 'events'), orderBy('startAt', 'asc')));
       allEvents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      buildMonthFilter();
       render();
     } catch (e) {
       el.innerHTML = `<div class="empty" style="color:var(--red)">読み込みエラー：${e.message}</div>`;
@@ -140,6 +170,7 @@
     const el = document.getElementById('list');
     const now = new Date();
     let rows = allEvents.map(ev => ({ ...ev, _d: fmtDate(ev.startAt) }));
+    if (monthFilter) rows = rows.filter(r => monthKey(r._d) === monthFilter);
     if (catFilter) rows = rows.filter(r => (r.category || '') === catFilter);
     if (typeFilter) rows = rows.filter(r => r.eventType === typeFilter);
     if (evKw) rows = rows.filter(r => [r.title, r.eventType, r.location, r.description].filter(Boolean).join(' ').toLowerCase().includes(evKw));
@@ -149,12 +180,26 @@
 
     if (!rows.length) { el.innerHTML = '<div class="empty">該当するイベントはありません</div>'; return; }
 
-    // 分類ごとに区切って表示（①→②→未分類の順。並びは各分類の中で日付順）
-    const groups = [...EVENT_CATEGORIES.map(c => ({ ...c, rows: rows.filter(r => r.category === c.key) })),
-                    { key:'', label:'その他のイベント', sub:'分類が未設定のイベント', rows: rows.filter(r => !eventCategory(r.category)) }]
-                   .filter(g => g.rows.length);
-    el.innerHTML = groups.map(g => `
-      <div class="cat-head" style="${g.color ? `color:${g.color};background:${g.bg}66` : ''}"><span class="t">${g.label}</span><span class="s">${g.sub}</span></div>
+    if (view === 'cat') {
+      // 分類別：①→②→未分類の順。並びは各分類の中で日付順
+      const groups = [...EVENT_CATEGORIES.map(c => ({ ...c, rows: rows.filter(r => r.category === c.key) })),
+                      { key:'', label:'その他のイベント', sub:'分類が未設定のイベント', rows: rows.filter(r => !eventCategory(r.category)) }]
+                     .filter(g => g.rows.length);
+      el.innerHTML = groups.map(g => `
+        <div class="cat-head" style="${g.color ? `color:${g.color};background:${g.bg}66` : ''}"><span class="t">${g.label}</span><span class="s">${g.sub}</span></div>
+        ${g.rows.map(itemHtml).join('')}`).join('');
+      return;
+    }
+    // 時系列（既定）：月ごとに見出しを入れて日付順
+    const months = [];
+    rows.forEach(r => {
+      const k = monthKey(r._d) || 'none';
+      let g = months.find(m => m.key === k);
+      if (!g) { g = { key: k, rows: [] }; months.push(g); }
+      g.rows.push(r);
+    });
+    el.innerHTML = months.map(g => `
+      <div class="month-head">${g.key === 'none' ? '<span class="m">日時未定</span>' : `<span class="y">${g.key.slice(0,4)}年</span><span class="m">${parseInt(g.key.slice(5),10)}月</span>`}<span class="n">${g.rows.length}件</span></div>
       ${g.rows.map(itemHtml).join('')}`).join('');
   }
 
@@ -164,7 +209,7 @@
       const past = d && d < now;
       const dateBox = d ? `
         <div class="ev-date">
-          <div class="m">${d.getFullYear()}.${d.getMonth()+1}</div>
+          <div class="m">${d.getMonth()+1}月</div>
           <div class="d">${d.getDate()}</div>
           <div class="w">(${WD[d.getDay()]})</div>
         </div>` : `<div class="ev-date"><div class="w">日時未定</div></div>`;
@@ -172,7 +217,7 @@
       return `<div class="event-item ${past?'ev-past':''}" onclick="location.href='event.html?id=${ev.id}'">
         ${dateBox}
         <div class="ev-main">
-          <div style="margin-bottom:3px">${eventTypeBadge(ev.eventType)}</div>
+          <div style="margin-bottom:3px;display:flex;gap:6px;flex-wrap:wrap">${eventCategoryBadge(ev.category)}${eventTypeBadge(ev.eventType)}</div>
           <div class="ev-title">${esc(ev.title)}</div>
           <div class="ev-meta">
             ${time ? `<span>🕐 ${time}</span>` : ''}
