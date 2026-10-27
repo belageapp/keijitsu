@@ -19,6 +19,21 @@
   .view-seg{display:inline-flex;border:1.5px solid var(--border);border-radius:20px;overflow:hidden;margin-left:auto}
   .view-seg div{padding:6px 12px;font-size:12px;font-weight:700;color:var(--ink-mid);cursor:pointer;background:#fff}
   .view-seg div.active{background:var(--indigo);color:#fff}
+  .month-strip{display:flex;align-items:center;gap:4px;margin-bottom:10px}
+  .month-arrow{flex-shrink:0;width:30px;height:30px;border:1.5px solid var(--border);border-radius:50%;background:#fff;color:var(--ink-mid);font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .month-scroll{flex:1;display:flex;gap:6px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:2px 0;-webkit-overflow-scrolling:touch}
+  .month-scroll::-webkit-scrollbar{display:none}
+  .month-chip{flex-shrink:0;scroll-snap-align:center;min-width:64px;padding:6px 10px;border:1.5px solid var(--border);border-radius:12px;background:#fff;text-align:center;cursor:pointer;color:var(--ink-mid);transition:.12s}
+  .month-chip .y{display:block;font-size:9px;font-weight:700;color:var(--ink-light);line-height:1}
+  .month-chip .m{display:block;font-size:15px;font-weight:900;line-height:1.3}
+  .month-chip .c{display:block;font-size:9px;font-weight:700;color:var(--gold-dark);line-height:1}
+  .month-chip.empty .m{color:var(--ink-light);font-weight:700}
+  .month-chip.now{border-color:var(--gold)}
+  .month-chip.active{background:var(--indigo);border-color:var(--indigo);color:#fff}
+  .month-chip.active .y,.month-chip.active .c{color:rgba(255,255,255,.85)}
+  .month-chip.active .m{color:#fff}
+  .month-all{flex-shrink:0;padding:6px 10px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:11px;font-weight:700;color:var(--ink-mid);cursor:pointer;white-space:nowrap}
+  .month-all.active{background:var(--indigo);border-color:var(--indigo);color:#fff}
   .sel{padding:6px 12px;border:1.5px solid var(--border);border-radius:20px;font-family:inherit;font-size:12px;font-weight:700;color:var(--ink-mid);background:#fff}
   .hq-link{display:block;margin-top:14px;text-align:center;font-size:12px;font-weight:700;color:var(--ink-mid);text-decoration:none}
   .hq-link:hover{color:var(--gold-dark)}
@@ -53,8 +68,13 @@
     <div class="filter-tab" data-f="all">すべて</div>
     <div class="view-seg" id="view-seg"><div class="active" data-v="time">時系列</div><div data-v="cat">分類別</div></div>
   </div>
+  <div class="month-strip">
+    <div class="month-arrow" id="month-prev">‹</div>
+    <div class="month-scroll" id="month-scroll"></div>
+    <div class="month-arrow" id="month-next">›</div>
+    <div class="month-all" id="month-all">すべての月</div>
+  </div>
   <div class="filter-tabs" style="align-items:center;flex-wrap:wrap">
-    <select id="month-filter" class="sel"></select>
     <select id="cat-filter" class="sel"></select>
     <select id="type-filter" class="sel"></select>
   </div>
@@ -119,20 +139,48 @@
   document.getElementById('cat-filter').innerHTML =
     '<option value="">すべての分類</option>' + EVENT_CATEGORIES.map(c => `<option value="${c.key}">${c.label}</option>`).join('');
   document.getElementById('cat-filter').onchange = (e) => { catFilter = e.target.value; render(); };
-  document.getElementById('month-filter').onchange = (e) => { monthFilter = e.target.value; render(); };
   document.querySelectorAll('#view-seg div').forEach(b => b.onclick = () => {
     document.querySelectorAll('#view-seg div').forEach(x => x.classList.remove('active'));
     b.classList.add('active'); view = b.dataset.v; render();
   });
   const monthKey = d => d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` : '';
-  const monthLabel = k => k ? `${k.slice(0,4)}年${parseInt(k.slice(5),10)}月` : '';
-  function buildMonthFilter() {
-    const keys = [...new Set(allEvents.map(ev => monthKey(fmtDate(ev.startAt))).filter(Boolean))].sort();
-    const sel = document.getElementById('month-filter');
-    sel.innerHTML = '<option value="">すべての月</option>' + keys.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join('');
-    if (!keys.includes(monthFilter)) monthFilter = '';
-    sel.value = monthFilter;
+  // 月の帯：今月を中心に前後の月を横に並べる（イベントのある月は件数つき）
+  const addMonths = (k, n) => { const y = +k.slice(0,4), m = +k.slice(5) - 1 + n; const d = new Date(y, m, 1); return monthKey(d); };
+  let monthInit = false;
+  function buildMonthStrip() {
+    const nowKey = monthKey(new Date());
+    const counts = {};
+    allEvents.forEach(ev => { const k = monthKey(fmtDate(ev.startAt)); if (k) counts[k] = (counts[k] || 0) + 1; });
+    const evKeys = Object.keys(counts).sort();
+    let first = addMonths(nowKey, -6), last = addMonths(nowKey, 6);
+    if (evKeys.length) { if (evKeys[0] < first) first = evKeys[0]; if (evKeys[evKeys.length-1] > last) last = evKeys[evKeys.length-1]; }
+    const keys = []; for (let k = first; k <= last; k = addMonths(k, 1)) keys.push(k);
+    // 既定：今月にイベントがあれば今月、なければ今月以降で最初にイベントがある月
+    if (!monthInit) {
+      monthInit = true;
+      const next = evKeys.find(k => k >= nowKey);
+      monthFilter = next || '';
+    }
+    const sc = document.getElementById('month-scroll');
+    sc.innerHTML = keys.map(k => {
+      const showYear = k.endsWith('-01') || k === keys[0];
+      return `<div class="month-chip ${counts[k] ? '' : 'empty'} ${k === nowKey ? 'now' : ''} ${k === monthFilter ? 'active' : ''}" data-k="${k}">
+        <span class="y">${showYear ? k.slice(0,4) : '&nbsp;'}</span><span class="m">${parseInt(k.slice(5),10)}月</span><span class="c">${counts[k] ? counts[k] + '件' : '&nbsp;'}</span>
+      </div>`;
+    }).join('');
+    document.getElementById('month-all').classList.toggle('active', !monthFilter);
+    sc.querySelectorAll('.month-chip').forEach(c => c.onclick = () => {
+      monthFilter = (monthFilter === c.dataset.k) ? '' : c.dataset.k;
+      buildMonthStrip(); render(); centerMonth(monthFilter || nowKey);
+    });
+    document.getElementById('month-all').onclick = () => { monthFilter = ''; buildMonthStrip(); render(); };
   }
+  function centerMonth(k) {
+    const el = document.querySelector(`.month-chip[data-k="${k}"]`);
+    if (el) el.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+  }
+  document.getElementById('month-prev').onclick = () => document.getElementById('month-scroll').scrollBy({ left: -210, behavior: 'smooth' });
+  document.getElementById('month-next').onclick = () => document.getElementById('month-scroll').scrollBy({ left: 210, behavior: 'smooth' });
   document.getElementById('hq-link').href = HQ_EVENTS_URL;
   document.getElementById('ev-search').oninput = (e) => { evKw = e.target.value.toLowerCase().trim(); render(); };
 
@@ -159,8 +207,10 @@
     try {
       const snap = await getDocs(query(collection(db, 'events'), orderBy('startAt', 'asc')));
       allEvents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      buildMonthFilter();
+      buildMonthStrip();
       render();
+      // 今月を真ん中に（既定で選んだ月があればそれを中心に）
+      requestAnimationFrame(() => centerMonth(monthFilter || monthKey(new Date())));
     } catch (e) {
       el.innerHTML = `<div class="empty" style="color:var(--red)">読み込みエラー：${e.message}</div>`;
     }
