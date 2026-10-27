@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex">
-<title>イベント一覧｜経営実践研究会 広島会員 情報共有アプリ</title>
+<title>広島イベント一覧｜経営実践研究会 広島会員 情報共有アプリ</title>
 <link rel="stylesheet" href="style.css">
 <style>
   .cat-head{display:flex;flex-direction:column;gap:2px;padding:12px 16px;background:#F7FAFD;border-bottom:1px solid var(--border);border-top:1px solid var(--border)}
@@ -35,8 +35,9 @@
   .month-all{flex-shrink:0;padding:6px 10px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:11px;font-weight:700;color:var(--ink-mid);cursor:pointer;white-space:nowrap}
   .month-all.active{background:var(--indigo);border-color:var(--indigo);color:#fff}
   .sel{padding:6px 12px;border:1.5px solid var(--border);border-radius:20px;font-family:inherit;font-size:12px;font-weight:700;color:var(--ink-mid);background:#fff}
-  .hq-link{display:block;margin-top:14px;text-align:center;font-size:12px;font-weight:700;color:var(--ink-mid);text-decoration:none}
-  .hq-link:hover{color:var(--gold-dark)}
+  .hq-link{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;padding:10px 14px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:13px;font-weight:700;color:var(--ink-mid);text-decoration:none}
+  .hq-link:hover{border-color:var(--gold);color:var(--gold-dark)}
+  .hq-link .sub{font-size:11px;font-weight:600;color:var(--ink-light)}
   .ev-apply{color:var(--indigo);text-decoration:underline;font-weight:700}
   .ev-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
   .ev-actions a{text-decoration:none}
@@ -60,9 +61,10 @@
 <body>
 <div class="wrap">
   <div class="page-head">
-    <div class="page-title"><span class="ico">📅</span>イベント一覧</div>
+    <div class="page-title"><span class="ico">📅</span>広島イベント一覧</div>
     <button class="btn btn-primary" id="addBtn" style="display:none">＋ イベント追加</button>
   </div>
+  <a class="hq-link" id="hq-link" href="#" target="_blank" rel="noopener"><span>🏛 全国イベントはこちら <span class="sub">（グローアップ・CL・ベーシックなど）</span></span><span>↗</span></a>
   <div style="margin-bottom:12px"><input id="ev-search" placeholder="🔍 タイトル・種別・場所・内容で検索" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;outline:none"></div>
   <div class="filter-tabs" style="align-items:center;margin-bottom:8px">
     <div class="filter-tab active" data-f="upcoming">開催予定</div>
@@ -81,7 +83,6 @@
     <select id="type-filter" class="sel"></select>
   </div>
   <div class="card" style="padding:0;overflow:hidden"><div id="list"><div class="loading">読み込み中...</div></div></div>
-  <a class="hq-link" id="hq-link" href="#" target="_blank" rel="noopener">🏛 本部サイトのイベント一覧（全国）を見る ↗</a>
 </div>
 
 <!-- イベント追加/編集モーダル -->
