@@ -26,6 +26,11 @@ export const EVENT_TYPES = [
   'その他',
 ];
 
+// 機能の表示スイッチ（2026-10-27 代表の指示で一時非表示。戻すときは true に）
+//   apply      : 申込ボタン（一覧・詳細）
+//   attendance : 出欠登録タブ・参加人数の表示・動員目標
+export const FEATURES = { apply: false, attendance: false };
+
 // イベントの分類（予定図の括り。文言は kj の正本 2026-11_予定図_文言_v2.1 に合わせる）
 export const EVENT_CATEGORIES = [
   { key:'exchange', label:'① 交流・対話・仲間づくり', sub:'広島チームの会｜申込は調整さん', bg:'#E1F1E7', color:'#1F6E48' },

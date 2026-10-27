@@ -60,9 +60,9 @@
 
   <div class="sec-h">試作でできること（例）</div>
   <div class="feat-grid">
-    <div class="feat"><div class="ico">📅</div><h3>イベント一覧・詳細</h3><p>広島チームの会と経実会のイベントを「① 交流・対話・仲間づくり」「② 学び・実践・伝播」の分類ごとに一覧表示。内容やチラシもその場で確認でき、申込（調整さん・経実会申込サイト）へもボタンから進めます。</p></div>
-    <div class="feat"><div class="ico">✋</div><h3>出欠登録</h3><p>本会・懇親会それぞれに出欠を登録。ゲストや自社の社員の参加、その他出席者も登録できます。</p></div>
-    <div class="feat"><div class="ico">🎯</div><h3>動員目標の見える化</h3><p>広島主催の主要イベントは、会員・ゲストの動員目標と達成率をゲージで表示。会の盛り上げに。</p></div>
+    <div class="feat"><div class="ico">📅</div><h3>イベント一覧・詳細</h3><p>広島チームの会と経実会のイベントを「① 交流・対話・仲間づくり」「② 学び・実践・伝播」の分類ごとに一覧表示。内容やチラシもその場で確認できます。<span data-feature="apply">申込（調整さん・経実会申込サイト）へもボタンから進めます。</span></p></div>
+    <div class="feat" data-feature="attendance"><div class="ico">✋</div><h3>出欠登録</h3><p>本会・懇親会それぞれに出欠を登録。ゲストや自社の社員の参加、その他出席者も登録できます。</p></div>
+    <div class="feat" data-feature="attendance"><div class="ico">🎯</div><h3>動員目標の見える化</h3><p>広島主催の主要イベントは、会員・ゲストの動員目標と達成率をゲージで表示。会の盛り上げに。</p></div>
     <div class="feat"><div class="ico">👥</div><h3>会員名簿</h3><p>会社名・志・事業内容・業種を登録して共有。業種バッジやキーワードで“つながりたい仲間”を探せます。</p></div>
     <div class="feat"><div class="ico">📊</div><h3>役割分担表</h3><p>これまでのGoogleスプレッドシートもアプリ内に表示。役割の割り当ても登録できます。</p></div>
     <div class="feat"><div class="ico">📸</div><h3>お顔写真</h3><p>その場でカメラ撮影＆トリミングして登録。顔の見える名簿になります。</p></div>
@@ -82,7 +82,7 @@
   <div class="sec-h">ぜひご意見をお聞かせください</div>
   <div class="todo">
     <ul>
-      <li>実際に<strong>プロフィールやイベント出欠</strong>を触ってみる</li>
+      <li>実際に<strong>プロフィールやイベント一覧</strong>を触ってみる</li>
       <li><strong>使いやすさ・分かりにくい点</strong>を教えてください</li>
       <li>「こんな機能があると良い」という<strong>ご要望</strong>も歓迎です</li>
       <li>そもそも<strong>導入する価値があるか</strong>のご感想もぜひ</li>
@@ -94,5 +94,9 @@
     ※提案・検討段階のデモ版です。ご意見・ご質問は事務局までお寄せください。
   </div>
 </div>
+<script type="module">
+  import { FEATURES } from './constants.js?v=1.5.0';
+  document.querySelectorAll('[data-feature]').forEach(el => { if (!FEATURES[el.dataset.feature]) el.remove(); });
+</script>
 </body>
 </html>

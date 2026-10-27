@@ -105,7 +105,7 @@
     <div class="field"><label>開催場所</label><input id="ee-location"></div>
     <div class="field"><label>内容・概要</label><textarea id="ee-desc"></textarea></div>
     <div class="field"><label>役割分担表（GoogleスプレッドシートURL）</label><input id="ee-sheet" placeholder="https://docs.google.com/spreadsheets/..."><div class="hint">「リンクを知っている全員が閲覧可」または「ウェブに公開」で埋め込み表示されます。特定のタブを表示したい場合は、そのタブを開いた状態のURL（末尾 #gid=…）を貼り付けてください。</div></div>
-    <div class="field"><label>申込URL（調整さん・経実会申込サイトなど）</label><input id="ee-apply" placeholder="https://chouseisan.com/... または https://keijitsu.shikuminet.jp/events/..."><div class="hint">一覧と詳細画面に「申込」ボタンとして表示されます。</div></div>
+    <div class="field"><label>申込URL（調整さん・経実会申込サイトなど）</label><input id="ee-apply" placeholder="https://chouseisan.com/... または https://keijitsu.shikuminet.jp/events/..."><div class="hint" id="ee-apply-hint">一覧と詳細画面に「申込」ボタンとして表示されます。</div></div>
     <div class="field"><label>K-PORTAL 決済URL（本部決済サイト）</label><input id="ee-kportal" placeholder="https://..."><div class="hint">イベントごとの本部決済ページのURL。出欠タブに決済ボタンとして表示されます。</div></div>
     <div class="field" id="ee-goal-wrap" style="display:none;gap:10px">
       <div style="flex:1"><label>本会 会員目標（人）</label><input type="number" id="ee-goal-mem" min="0"></div>
@@ -158,11 +158,12 @@
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
   import { db, storage } from './firebase-config.js';
   import { requireAuth, renderTopbar, canEdit } from './auth.js';
-  import { EVENT_TYPES, eventTypeBadge, INDUSTRIES, industryBadge, OTHER_CATEGORIES, MOBILIZATION_TYPES, eventTypeOptionsInner, eventCategoryBadge, eventCategoryOptionsInner, applySiteName } from './constants.js?v=1.4.0';
+  import { EVENT_TYPES, eventTypeBadge, INDUSTRIES, industryBadge, OTHER_CATEGORIES, MOBILIZATION_TYPES, eventTypeOptionsInner, eventCategoryBadge, eventCategoryOptionsInner, applySiteName, FEATURES } from './constants.js?v=1.5.0';
 
   // 種別セレクトを構築
   document.getElementById('ee-type').innerHTML =
     '<option value="">（未設定）</option>' + eventTypeOptionsInner();
+  if (!FEATURES.apply) document.getElementById('ee-apply-hint').textContent = '（現在、申込ボタンは一時的に非表示にしています。URLは保存されます）';
   document.getElementById('ee-category').innerHTML =
     '<option value="">（未設定）</option>' + eventCategoryOptionsInner();
 
@@ -308,7 +309,8 @@
       { key:'attendance', label:'出欠' },
       { key:'roles', label:'役割' },
       { key:'files', label:'資料' },
-    ];
+    ].filter(t => FEATURES.attendance || t.key !== 'attendance');
+    if (!FEATURES.attendance && currentTab === 'attendance') currentTab = 'overview';
     document.getElementById('content').innerHTML = `
       <div class="card ev-hero">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
@@ -325,7 +327,7 @@
         ${ev.location ? `<div class="meta-row">📍 ${esc(ev.location)}</div>` : ''}
         ${applyBtnHtml('margin-top:10px')}
       </div>
-      ${summaryPanelHtml(computeSummary())}
+      ${FEATURES.attendance ? summaryPanelHtml(computeSummary()) : ''}
       <div class="ev-tabs">
         ${TABS.map(t => `<button class="ev-tab ${t.key===currentTab?'active':''}" data-tab="${t.key}">${t.label}</button>`).join('')}
       </div>
@@ -348,7 +350,7 @@
   }
 
   function applyBtnHtml(style = '') {
-    if (!ev.applyUrl) return '';
+    if (!FEATURES.apply || !ev.applyUrl) return '';
     return `<div style="${style}"><a href="${escAttr(ev.applyUrl)}" target="_blank" rel="noopener" class="btn btn-primary btn-sm" style="text-decoration:none">📝 申込（${applySiteName(ev.applyUrl)}）↗</a></div>`;
   }
 

@@ -97,7 +97,7 @@
     <div class="field"><label>開催場所</label><input id="ev-location" placeholder="例：〇〇会館 3F"></div>
     <div class="field"><label>内容・概要</label><textarea id="ev-desc" placeholder="イベントの内容を入力"></textarea></div>
     <div class="field"><label>役割分担表（GoogleスプレッドシートURL）</label><input id="ev-sheet" placeholder="https://docs.google.com/spreadsheets/..."><div class="hint">「リンクを知っている全員が閲覧可」または「ウェブに公開」で詳細画面に埋め込み表示されます。特定のタブを表示したい場合は、そのタブを開いた状態のURL（末尾 #gid=…）を貼り付けてください。</div></div>
-    <div class="field"><label>申込URL（調整さん・経実会申込サイトなど）</label><input id="ev-apply" placeholder="https://chouseisan.com/... または https://keijitsu.shikuminet.jp/events/..."><div class="hint">一覧と詳細画面に「申込」ボタンとして表示されます。</div></div>
+    <div class="field"><label>申込URL（調整さん・経実会申込サイトなど）</label><input id="ev-apply" placeholder="https://chouseisan.com/... または https://keijitsu.shikuminet.jp/events/..."><div class="hint" id="ev-apply-hint">一覧と詳細画面に「申込」ボタンとして表示されます。</div></div>
     <div class="field"><label>K-PORTAL 決済URL（本部決済サイト）</label><input id="ev-kportal" placeholder="https://..."><div class="hint">イベントごとの本部決済ページのURL。詳細画面に決済ボタンとして表示されます。</div></div>
     <div class="field" id="ev-goal-wrap" style="display:none;gap:10px">
       <div style="flex:1"><label>本会 会員目標（人）</label><input type="number" id="ev-goal-mem" min="0" placeholder="例：40"></div>
@@ -117,7 +117,7 @@
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
   import { db } from './firebase-config.js';
   import { requireAuth, renderTopbar, canEdit } from './auth.js';
-  import { EVENT_TYPES, eventTypeBadge, MOBILIZATION_TYPES, eventTypeOptionsInner, EVENT_CATEGORIES, eventCategory, eventCategoryBadge, eventCategoryOptionsInner, HQ_EVENTS_URL, applySiteName } from './constants.js?v=1.4.0';
+  import { EVENT_TYPES, eventTypeBadge, MOBILIZATION_TYPES, eventTypeOptionsInner, EVENT_CATEGORIES, eventCategory, eventCategoryBadge, eventCategoryOptionsInner, HQ_EVENTS_URL, applySiteName, FEATURES } from './constants.js?v=1.5.0';
 
   let me = null;
   let allEvents = [];
@@ -182,6 +182,7 @@
   document.getElementById('month-prev').onclick = () => document.getElementById('month-scroll').scrollBy({ left: -210, behavior: 'smooth' });
   document.getElementById('month-next').onclick = () => document.getElementById('month-scroll').scrollBy({ left: 210, behavior: 'smooth' });
   document.getElementById('hq-link').href = HQ_EVENTS_URL;
+  if (!FEATURES.apply) document.getElementById('ev-apply-hint').textContent = '（現在、申込ボタンは一時的に非表示にしています。URLは保存されます）';
   document.getElementById('ev-search').oninput = (e) => { evKw = e.target.value.toLowerCase().trim(); render(); };
 
   const WD = ['日','月','火','水','木','金','土'];
@@ -273,9 +274,9 @@
             ${time ? `<span>🕐 ${time}</span>` : ''}
             ${ev.location ? `<span>📍 ${esc(ev.location)}</span>` : ''}
             ${past ? '<span class="badge badge-gray">終了</span>' : '<span class="badge badge-gold">予定</span>'}
-            ${ev.applyUrl && !past ? `<span>📝 <a class="ev-apply" href="${escAttr(ev.applyUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">申込（${applySiteName(ev.applyUrl)}）↗</a></span>` : ''}
+            ${FEATURES.apply && ev.applyUrl && !past ? `<span>📝 <a class="ev-apply" href="${escAttr(ev.applyUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">申込（${applySiteName(ev.applyUrl)}）↗</a></span>` : ''}
           </div>
-          ${summaryLineHtml(ev)}
+          ${FEATURES.attendance ? summaryLineHtml(ev) : ''}
         </div>
       </div>`;
   }
