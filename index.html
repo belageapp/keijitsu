@@ -140,8 +140,9 @@
   // 種別セレクトを構築（モーダル用・絞り込み用）
   document.getElementById('ev-type').innerHTML =
     '<option value="">（未設定）</option>' + eventTypeOptionsInner();
+  // 絞り込みの種別は「in広島」の種別だけ（全国の種別は K-PORTAL 側のため）
   document.getElementById('type-filter').innerHTML =
-    '<option value="">すべての種別</option>' + eventTypeOptionsInner();
+    '<option value="">すべての種別</option>' + EVENT_TYPES.filter(t => t.endsWith('in広島')).map(t => `<option value="${t}">${t}</option>`).join('');
   document.getElementById('type-filter').onchange = (e) => { typeFilter = e.target.value; render(); };
   document.getElementById('ev-category').innerHTML =
     '<option value="">（未設定）</option>' + eventCategoryOptionsInner();
