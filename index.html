@@ -38,6 +38,8 @@
   .hq-link{display:block;margin-top:14px;text-align:center;font-size:12px;font-weight:700;color:var(--ink-mid);text-decoration:none}
   .hq-link:hover{color:var(--gold-dark)}
   .ev-apply{color:var(--indigo);text-decoration:underline;font-weight:700}
+  .ev-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .ev-actions a{text-decoration:none}
   .filter-tabs{display:flex;gap:6px;margin-bottom:16px}
   .filter-tab{padding:6px 14px;border:1.5px solid var(--border);border-radius:20px;background:#fff;font-size:12px;font-weight:700;color:var(--ink-mid);cursor:pointer}
   .filter-tab.active{background:var(--indigo);border-color:var(--indigo);color:#fff}
@@ -116,8 +118,8 @@
   import { collection, getDocs, addDoc, updateDoc, doc, serverTimestamp, query, orderBy }
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
   import { db } from './firebase-config.js';
-  import { optionalAuth, renderTopbar, canEdit } from './auth.js?v=1.6.0';
-  import { EVENT_TYPES, eventTypeBadge, MOBILIZATION_TYPES, eventTypeOptionsInner, EVENT_CATEGORIES, eventCategory, eventCategoryBadge, eventCategoryOptionsInner, HQ_EVENTS_URL, applySiteName, FEATURES } from './constants.js?v=1.6.0';
+  import { optionalAuth, renderTopbar, canEdit } from './auth.js?v=1.6.1';
+  import { EVENT_TYPES, eventTypeBadge, MOBILIZATION_TYPES, eventTypeOptionsInner, EVENT_CATEGORIES, eventCategory, eventCategoryBadge, eventCategoryOptionsInner, HQ_EVENTS_URL, applySiteName, FEATURES } from './constants.js?v=1.6.1';
 
   let me = null;
   let allEvents = [];
@@ -271,7 +273,10 @@
             ${time ? `<span>🕐 ${time}</span>` : ''}
             ${ev.location ? `<span>📍 ${esc(ev.location)}</span>` : ''}
             ${past ? '<span class="badge badge-gray">終了</span>' : '<span class="badge badge-gold">予定</span>'}
-            ${FEATURES.apply && ev.applyUrl && !past ? `<span>📝 <a class="ev-apply" href="${escAttr(ev.applyUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">申込（${applySiteName(ev.applyUrl)}）↗</a></span>` : ''}
+          </div>
+          <div class="ev-actions" onclick="event.stopPropagation()">
+            ${FEATURES.apply && ev.applyUrl && !past ? `<a class="btn btn-primary btn-sm" href="${escAttr(ev.applyUrl)}" target="_blank" rel="noopener">📝 申込（${applySiteName(ev.applyUrl)}）↗</a>` : ''}
+            <a class="btn btn-outline btn-sm" href="event.html?id=${ev.id}">詳細を見る</a>
           </div>
           ${FEATURES.attendance ? summaryLineHtml(ev) : ''}
         </div>

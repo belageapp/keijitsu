@@ -31,7 +31,7 @@ export const EVENT_TYPES = [
 //   attendance : 出欠登録タブ・参加人数の表示・動員目標
 //   members    : トップバーの「会員」タブ（会員名簿）
 //   register   : 新規会員登録（register.html と各ページの登録リンク）
-export const FEATURES = { apply: false, attendance: false, members: false, register: false };
+export const FEATURES = { apply: true, attendance: false, members: false, register: false };   // apply は 2026-10-27 に再表示（USER）
 
 // イベントの分類（予定図の括り。文言は kj の正本 2026-11_予定図_文言_v2.1 に合わせる）
 export const EVENT_CATEGORIES = [

@@ -5,7 +5,7 @@
 import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { auth, db } from './firebase-config.js';
-import { FEATURES } from './constants.js?v=1.6.0';
+import { FEATURES } from './constants.js?v=1.6.1';
 
 export const ROLE_LABELS = {
   admin:  '管理者',
