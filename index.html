@@ -35,9 +35,12 @@
   .month-all{flex-shrink:0;padding:6px 10px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:11px;font-weight:700;color:var(--ink-mid);cursor:pointer;white-space:nowrap}
   .month-all.active{background:var(--indigo);border-color:var(--indigo);color:#fff}
   .sel{padding:6px 12px;border:1.5px solid var(--border);border-radius:20px;font-family:inherit;font-size:12px;font-weight:700;color:var(--ink-mid);background:#fff}
-  .hq-link{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;padding:10px 14px;border:1.5px solid var(--border);border-radius:12px;background:#fff;font-size:13px;font-weight:700;color:var(--ink-mid);text-decoration:none}
-  .hq-link:hover{border-color:var(--gold);color:var(--gold-dark)}
-  .hq-link .sub{font-size:11px;font-weight:600;color:var(--ink-light)}
+  .hq-link{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;padding:14px 18px;border-radius:14px;background:linear-gradient(135deg,#3BA3E6,#1C6BA8);color:#fff;text-decoration:none;box-shadow:0 4px 14px rgba(28,107,168,.28);transition:.15s}
+  .hq-link:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(28,107,168,.36)}
+  .hq-link .main{display:flex;flex-direction:column;gap:3px}
+  .hq-link .t{font-size:17px;font-weight:900;letter-spacing:.02em}
+  .hq-link .sub{font-size:12px;font-weight:700;color:rgba(255,255,255,.88)}
+  .hq-link .go{flex-shrink:0;width:36px;height:36px;border-radius:50%;background:#fff;color:var(--indigo);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900}
   .ev-apply{color:var(--indigo);text-decoration:underline;font-weight:700}
   .ev-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
   .ev-actions a{text-decoration:none}
@@ -64,7 +67,10 @@
     <div class="page-title"><span class="ico">📅</span>広島イベント一覧</div>
     <button class="btn btn-primary" id="addBtn" style="display:none">＋ イベント追加</button>
   </div>
-  <a class="hq-link" id="hq-link" href="#" target="_blank" rel="noopener"><span>🏛 全国イベントはこちら <span class="sub">（グローアップ・CL・ベーシックなど）</span></span><span>↗</span></a>
+  <a class="hq-link" id="hq-link" href="#" target="_blank" rel="noopener">
+    <span class="main"><span class="t">🏛 全国イベントはこちら</span><span class="sub">グローアップ・CL・ベーシックなど（本部サイトへ）</span></span>
+    <span class="go">↗</span>
+  </a>
   <div style="margin-bottom:12px"><input id="ev-search" placeholder="🔍 タイトル・種別・場所・内容で検索" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;outline:none"></div>
   <div class="filter-tabs" style="align-items:center;margin-bottom:8px">
     <div class="filter-tab active" data-f="upcoming">開催予定</div>
