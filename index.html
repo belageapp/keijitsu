@@ -155,12 +155,8 @@
     let first = addMonths(nowKey, -6), last = addMonths(nowKey, 6);
     if (evKeys.length) { if (evKeys[0] < first) first = evKeys[0]; if (evKeys[evKeys.length-1] > last) last = evKeys[evKeys.length-1]; }
     const keys = []; for (let k = first; k <= last; k = addMonths(k, 1)) keys.push(k);
-    // 既定：今月にイベントがあれば今月、なければ今月以降で最初にイベントがある月
-    if (!monthInit) {
-      monthInit = true;
-      const next = evKeys.find(k => k >= nowKey);
-      monthFilter = next || '';
-    }
+    // 既定：月は選ばない（当月以降の全日程を表示）。帯は今月を中心に出す
+    if (!monthInit) { monthInit = true; monthFilter = ''; }
     const sc = document.getElementById('month-scroll');
     sc.innerHTML = keys.map(k => {
       const showYear = k.endsWith('-01') || k === keys[0];
@@ -210,7 +206,7 @@
       allEvents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       buildMonthStrip();
       render();
-      // 今月を真ん中に（既定で選んだ月があればそれを中心に）
+      // 今月を真ん中に
       requestAnimationFrame(() => centerMonth(monthFilter || monthKey(new Date())));
     } catch (e) {
       el.innerHTML = `<div class="empty" style="color:var(--red)">読み込みエラー：${e.message}</div>`;
@@ -225,8 +221,9 @@
     if (catFilter) rows = rows.filter(r => (r.category || '') === catFilter);
     if (typeFilter) rows = rows.filter(r => r.eventType === typeFilter);
     if (evKw) rows = rows.filter(r => [r.title, r.eventType, r.location, r.description].filter(Boolean).join(' ').toLowerCase().includes(evKw));
-    if (filter === 'upcoming') rows = rows.filter(r => r._d && r._d >= new Date(now.toDateString())).sort((a,b)=>a._d-b._d);
-    else if (filter === 'past') rows = rows.filter(r => !r._d || r._d < new Date(now.toDateString())).sort((a,b)=>b._d-a._d);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);   // 「開催予定」＝当月1日以降
+    if (filter === 'upcoming') rows = rows.filter(r => r._d && r._d >= monthStart).sort((a,b)=>a._d-b._d);
+    else if (filter === 'past') rows = rows.filter(r => !r._d || r._d < monthStart).sort((a,b)=>b._d-a._d);
     else rows.sort((a,b)=> (a._d||0)-(b._d||0));   // すべて：古い順（時系列）
 
     if (!rows.length) { el.innerHTML = '<div class="empty">該当するイベントはありません</div>'; return; }
