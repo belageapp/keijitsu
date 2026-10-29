@@ -141,8 +141,8 @@
   import { doc, getDoc, updateDoc, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
   import { ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
   import { db, storage } from './firebase-config.js';
-  import { requireAuth, renderTopbar, canEdit, canEditProfile } from './auth.js?v=1.6.1';
-  import { INDUSTRIES, industryBadge } from './constants.js?v=1.6.1';
+  import { requireAuth, renderTopbar, canEdit, canEditProfile } from './auth.js?v=1.7.0';
+  import { INDUSTRIES, industryBadge } from './constants.js?v=1.7.0';
 
   const targetUid = new URLSearchParams(location.search).get('uid');
   let me = null, user = null, members = [], memberMap = {};
