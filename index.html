@@ -42,15 +42,17 @@
   .hq-link .sub{font-size:12px;font-weight:700;color:rgba(255,255,255,.88)}
   .hq-link .go{flex-shrink:0;width:36px;height:36px;border-radius:50%;background:#fff;color:var(--indigo);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900}
   /* 特別講演の開催判定日の帯（開催日の1か月前＝開催判定日） */
-  .sp-alert{display:block;margin-bottom:12px;padding:14px 18px;border-radius:14px;background:linear-gradient(135deg,#F2994A,#D9480F);color:#fff;box-shadow:0 4px 14px rgba(217,72,15,.28);cursor:pointer}
-  .sp-alert .t{font-size:16px;font-weight:900;line-height:1.5}
-  .sp-alert .t .hl{display:inline-block;background:#fff;color:#C2410C;border-radius:8px;padding:1px 8px;margin-left:2px}
-  .sp-alert .s{font-size:12px;font-weight:700;color:rgba(255,255,255,.92);margin-top:4px;line-height:1.6}
-  .sp-alert .meta{font-size:12px;color:rgba(255,255,255,.88);margin-top:2px}
+  .sp-alert{display:block;margin-bottom:12px;padding:14px 18px 14px 16px;border-radius:12px;background:#fff;border:1px solid #EADFD3;border-left:4px solid #B4532A;box-shadow:0 1px 3px rgba(60,40,20,.06);cursor:pointer;transition:.15s}
+  .sp-alert:hover{box-shadow:0 3px 10px rgba(60,40,20,.10)}
+  .sp-alert .lb{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.08em;color:#B4532A;margin-bottom:4px}
+  .sp-alert .t{font-size:15px;font-weight:800;color:var(--ink,#1F2A37);line-height:1.55}
+  .sp-alert .t .hl{display:inline-block;margin-left:6px;font-size:13px;font-weight:800;color:#B4532A;background:#FBF1EA;border-radius:6px;padding:1px 8px}
+  .sp-alert .meta{font-size:12px;color:var(--ink-mid,#6B7280);margin-top:2px}
+  .sp-alert .s{font-size:12px;color:var(--ink-mid,#6B7280);margin-top:6px;line-height:1.7}
   .sp-alert .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-  .sp-alert .acts a{display:inline-block;padding:7px 14px;border-radius:9px;font-size:13px;font-weight:800;text-decoration:none}
-  .sp-alert .acts .ap{background:#fff;color:#C2410C}
-  .sp-alert .acts .dt{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.6)}
+  .sp-alert .acts a{display:inline-block;padding:6px 13px;border-radius:8px;font-size:12.5px;font-weight:700;text-decoration:none}
+  .sp-alert .acts .ap{background:#B4532A;color:#fff}
+  .sp-alert .acts .dt{background:#fff;color:#B4532A;border:1px solid #E3C9B8}
   .ev-apply{color:var(--indigo);text-decoration:underline;font-weight:700}
   .ev-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
   .ev-actions a{text-decoration:none}
@@ -326,7 +328,8 @@
       const sub = left >= 0
         ? `<div class="s">この日までに広島会員の3分の2のお申し込みがあれば開催が決まります。判定日のあとも、お申し込みいただけます。</div>` : '';
       return `<div class="sp-alert" onclick="location.href='event.html?id=${ev.id}'">
-        <div class="t">🔥 特別講演 ${md(d)}｜${head}</div>
+        <div class="lb">特別講演 in 広島</div>
+        <div class="t">${md(d)}｜${head}</div>
         <div class="meta">${esc(ev.title)}${ev.location ? '｜📍 ' + esc(ev.location) : ''}</div>
         ${sub}
         <div class="acts" onclick="event.stopPropagation()">
