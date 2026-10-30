@@ -41,6 +41,16 @@
   .hq-link .t{font-size:17px;font-weight:900;letter-spacing:.02em}
   .hq-link .sub{font-size:12px;font-weight:700;color:rgba(255,255,255,.88)}
   .hq-link .go{flex-shrink:0;width:36px;height:36px;border-radius:50%;background:#fff;color:var(--indigo);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900}
+  /* 特別講演の開催判定日の帯（開催日の1か月前＝開催判定日） */
+  .sp-alert{display:block;margin-bottom:12px;padding:14px 18px;border-radius:14px;background:linear-gradient(135deg,#F2994A,#D9480F);color:#fff;box-shadow:0 4px 14px rgba(217,72,15,.28);cursor:pointer}
+  .sp-alert .t{font-size:16px;font-weight:900;line-height:1.5}
+  .sp-alert .t .hl{display:inline-block;background:#fff;color:#C2410C;border-radius:8px;padding:1px 8px;margin-left:2px}
+  .sp-alert .s{font-size:12px;font-weight:700;color:rgba(255,255,255,.92);margin-top:4px;line-height:1.6}
+  .sp-alert .meta{font-size:12px;color:rgba(255,255,255,.88);margin-top:2px}
+  .sp-alert .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .sp-alert .acts a{display:inline-block;padding:7px 14px;border-radius:9px;font-size:13px;font-weight:800;text-decoration:none}
+  .sp-alert .acts .ap{background:#fff;color:#C2410C}
+  .sp-alert .acts .dt{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.6)}
   .ev-apply{color:var(--indigo);text-decoration:underline;font-weight:700}
   .ev-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
   .ev-actions a{text-decoration:none}
@@ -67,6 +77,7 @@
     <div class="page-title"><span class="ico">📅</span>広島イベント一覧</div>
     <button class="btn btn-primary" id="addBtn" style="display:none">＋ イベント追加</button>
   </div>
+  <div id="sp-alerts"></div>
   <a class="hq-link" id="hq-link" href="#" target="_blank" rel="noopener">
     <span class="main"><span class="t">🏛 全国/オンラインイベントはこちら</span><span class="sub">グローアップ・CL・ベーシック・他県講演など（K-PORTALへ）</span></span>
     <span class="go">↗</span>
@@ -215,6 +226,7 @@
       const snap = await getDocs(query(collection(db, 'events'), orderBy('startAt', 'asc')));
       allEvents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       buildMonthStrip();
+      renderSpecialAlerts();
       render();
       // 今月を真ん中に
       requestAnimationFrame(() => centerMonth(monthFilter || monthKey(new Date())));
@@ -289,6 +301,40 @@
           ${FEATURES.attendance ? summaryLineHtml(ev) : ''}
         </div>
       </div>`;
+  }
+
+  // 特別講演in広島：開催日の1か月前（開催判定日）までの申込を促す帯をトップに出す
+  //   判定日まで：「開催判定日 M/D（曜）まで あと◯日」＋説明（案A、USER 2026-10-30）
+  //   判定日を過ぎて開催日まで：「至急お申し込みをお願いします」
+  function renderSpecialAlerts() {
+    const box = document.getElementById('sp-alerts');
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const md = d => `${d.getMonth()+1}/${d.getDate()}（${WD[d.getDay()]}）`;
+    const list = allEvents
+      .map(ev => ({ ...ev, _d: fmtDate(ev.startAt) }))
+      .filter(ev => ev.eventType === '特別講演in広島' && ev._d && ev._d >= now)
+      .sort((a,b) => a._d - b._d);
+    box.innerHTML = list.map(ev => {
+      const d = ev._d;
+      const j = new Date(d.getFullYear(), d.getMonth() - 1, d.getDate());
+      if (j.getDate() !== d.getDate()) j.setDate(0);   // 前月に同じ日がない（例：3/31）→前月末
+      const left = Math.round((j - today) / 86400000);
+      const head = left >= 0
+        ? `開催判定日 ${md(j)}まで <span class="hl">${left === 0 ? '本日' : 'あと' + left + '日'}</span>`
+        : `<span class="hl">至急お申し込みをお願いします</span>`;
+      const sub = left >= 0
+        ? `<div class="s">この日までに広島会員の3分の2のお申し込みがあれば開催が決まります。判定日のあとも、お申し込みいただけます。</div>` : '';
+      return `<div class="sp-alert" onclick="location.href='event.html?id=${ev.id}'">
+        <div class="t">🔥 特別講演 ${md(d)}｜${head}</div>
+        <div class="meta">${esc(ev.title)}${ev.location ? '｜📍 ' + esc(ev.location) : ''}</div>
+        ${sub}
+        <div class="acts" onclick="event.stopPropagation()">
+          ${FEATURES.apply && ev.applyUrl ? `<a class="ap" href="${escAttr(ev.applyUrl)}" target="_blank" rel="noopener">📝 申込（${applySiteName(ev.applyUrl)}）↗</a>` : ''}
+          <a class="dt" href="event.html?id=${ev.id}">詳細を見る</a>
+        </div>
+      </div>`;
+    }).join('');
   }
 
   function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
