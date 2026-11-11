@@ -311,6 +311,7 @@
           </div>
           <div class="ev-actions" onclick="event.stopPropagation()">
             ${FEATURES.apply && ev.applyUrl && !past ? `<a class="btn btn-primary btn-sm" href="${escAttr(ev.applyUrl)}" target="_blank" rel="noopener">📝 申込（${applySiteName(ev.applyUrl)}）↗</a>` : ''}
+            ${FEATURES.apply && !ev.applyUrl && ev.applyNote && !past ? `<span class="btn btn-outline btn-sm" style="cursor:default;opacity:.75">📝 ${esc(ev.applyNote)}</span>` : ''}
             <a class="btn btn-outline btn-sm" href="event.html?id=${ev.id}">詳細を見る</a>
           </div>
           ${FEATURES.attendance ? summaryLineHtml(ev) : ''}

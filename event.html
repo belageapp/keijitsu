@@ -353,7 +353,9 @@
   }
 
   function applyBtnHtml(style = '') {
-    if (!FEATURES.apply || !ev.applyUrl) return '';
+    if (!FEATURES.apply) return '';
+    // 申込URLがまだ無いときは注記（applyNote、例：「申込（調整さん）は準備中です」）を出す
+    if (!ev.applyUrl) return ev.applyNote ? `<div style="${style}"><span class="btn btn-outline btn-sm" style="cursor:default;opacity:.75">📝 ${esc(ev.applyNote)}</span></div>` : '';
     return `<div style="${style}"><a href="${escAttr(ev.applyUrl)}" target="_blank" rel="noopener" class="btn btn-primary btn-sm" style="text-decoration:none">📝 申込（${applySiteName(ev.applyUrl)}）↗</a></div>`;
   }
 
