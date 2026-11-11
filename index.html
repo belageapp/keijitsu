@@ -329,7 +329,8 @@
     const list = allEvents
       .map(ev => ({ ...ev, _d: fmtDate(ev.startAt) }))
       .filter(ev => ev.eventType === '特別講演in広島' && ev._d && ev._d >= now)
-      .sort((a,b) => a._d - b._d);
+      .sort((a,b) => a._d - b._d)
+      .slice(0, 2);   // 直近2回だけ（USER 2026-11-11）。ほかの回は一覧で見る
     if (!list.length) { box.innerHTML = ''; return; }
     box.innerHTML = `<div class="sp-box"><div class="hd">特別講演in広島</div>` + list.map(ev => {
       const d = ev._d;
