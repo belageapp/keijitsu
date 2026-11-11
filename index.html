@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex">
 <title>広島イベント一覧｜経営実践研究会 広島会員 情報共有アプリ</title>
+<meta property="og:url" content="https://belageapp.github.io/keijitsu/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="経実会広島">
+<meta property="og:title" content="経実会広島 イベント一覧">
+<meta property="og:description" content="広島の特別講演・全動員日・オリエン・ランチ・フォローMTGの予定と申込先。ログインなしで見られます。">
+<meta property="og:image" content="https://belageapp.github.io/keijitsu/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="style.css">
 <style>
   .cat-head{display:flex;flex-direction:column;gap:2px;padding:12px 16px;background:#F7FAFD;border-bottom:1px solid var(--border);border-top:1px solid var(--border)}
@@ -150,8 +159,8 @@
   import { collection, getDocs, addDoc, updateDoc, doc, serverTimestamp, query, orderBy }
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
   import { db } from './firebase-config.js';
-  import { optionalAuth, renderTopbar, canEdit } from './auth.js?v=1.9.0';
-  import { EVENT_TYPES, eventTypeBadge, MOBILIZATION_TYPES, eventTypeOptionsInner, EVENT_CATEGORIES, eventCategory, eventCategoryBadge, eventCategoryOptionsInner, HQ_EVENTS_URL, applySiteName, FEATURES } from './constants.js?v=1.9.0';
+  import { optionalAuth, renderTopbar, canEdit } from './auth.js?v=1.10.0';
+  import { EVENT_TYPES, eventTypeBadge, MOBILIZATION_TYPES, eventTypeOptionsInner, EVENT_CATEGORIES, eventCategory, eventCategoryBadge, eventCategoryOptionsInner, HQ_EVENTS_URL, applySiteName, FEATURES } from './constants.js?v=1.10.0';
 
   let me = null;
   let allEvents = [];
@@ -355,7 +364,7 @@
     }).join('') + `</div>`;
   }
 
-  // 全員参集日in広島（月1回、会員が全員集まる日）：次回を大きく、以降の日付を並べる
+  // 全動員日in広島（月1回、会員が全員集まる日。本部の意向で当面この呼び名、USER 2026-11-11）：次回を大きく、以降の日付を並べる
   //   会場・会費・申込方法は未定のため、日程だけ先に載せる（USER 2026-11-10）
   function renderAssembly() {
     const box = document.getElementById('ga-box');
@@ -365,14 +374,14 @@
     const hm = d => `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
     const list = allEvents
       .map(ev => ({ ...ev, _d: fmtDate(ev.startAt), _e: ev.endAt ? fmtDate(ev.endAt) : null }))
-      .filter(ev => ev.eventType === '全員参集日in広島' && ev._d && ev._d >= now)
+      .filter(ev => ev.eventType === '全動員日in広島' && ev._d && ev._d >= now)
       .sort((a,b) => a._d - b._d);
     if (!list.length) { box.innerHTML = ''; return; }
     const [next, ...rest] = list;
     const nd = new Date(next._d.getFullYear(), next._d.getMonth(), next._d.getDate());
     const left = Math.round((nd - today) / 86400000);
     box.innerHTML = `<div class="ga-box">
-      <div class="hd">全員参集日</div>
+      <div class="hd">全動員日</div>
       <div class="lead">毎月1回、広島の会員みんなで集まる日です。</div>
       <div class="ga-next" onclick="location.href='event.html?id=${next.id}'">
         <div class="t">次回 ${md(next._d)} ${hm(next._d)}${next._e ? '〜' + hm(next._e) : '〜'} <span class="hl">${left === 0 ? '本日' : 'あと' + left + '日'}</span></div>

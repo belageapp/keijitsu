@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex">
 <title>イベント詳細｜経営実践研究会 広島会員 情報共有アプリ</title>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="経実会広島">
+<meta property="og:title" content="経実会広島 イベント一覧">
+<meta property="og:description" content="広島の特別講演・全動員日・オリエン・ランチ・フォローMTGの予定と申込先。ログインなしで見られます。">
+<meta property="og:image" content="https://belageapp.github.io/keijitsu/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="style.css">
 <style>
   .ev-hero{padding:22px;margin-bottom:16px}
@@ -157,8 +165,8 @@
   import { ref, uploadBytes, getDownloadURL, deleteObject }
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
   import { db, storage } from './firebase-config.js';
-  import { optionalAuth, renderTopbar, canEdit } from './auth.js?v=1.9.0';
-  import { EVENT_TYPES, eventTypeBadge, INDUSTRIES, industryBadge, OTHER_CATEGORIES, MOBILIZATION_TYPES, eventTypeOptionsInner, eventCategoryBadge, eventCategoryOptionsInner, applySiteName, FEATURES } from './constants.js?v=1.9.0';
+  import { optionalAuth, renderTopbar, canEdit } from './auth.js?v=1.10.0';
+  import { EVENT_TYPES, eventTypeBadge, INDUSTRIES, industryBadge, OTHER_CATEGORIES, MOBILIZATION_TYPES, eventTypeOptionsInner, eventCategoryBadge, eventCategoryOptionsInner, applySiteName, FEATURES } from './constants.js?v=1.10.0';
 
   // 種別セレクトを構築
   document.getElementById('ee-type').innerHTML =
