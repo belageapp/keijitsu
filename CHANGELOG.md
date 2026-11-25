@@ -17,10 +17,11 @@ Firebase（Auth / Firestore / Storage）＋ 静的HTML/JS、GitHub Pages（belag
 - 今週の宿題：ログインした会員が見る。追加・済みの印・削除は editor 以上。
 - 編集（editor 以上、各行の ✎）：実行委員長・副、K-PORTAL の依頼日・シート入力日・掲載日、申込人数（手入力）・受付名簿の URL。
 - 実行委員長・副の名前はログインした会員だけに見せる（USER 2026-11-25）。
+- 申込の欄に、受付名簿の「区分」ごとの人数（会員・ゲスト・社員・家族・世話人・理事など、キャンセルを除く）を小さく出す（2026-11-26）。
 - **テスト中は未ログインでも全部見せる**（USER 2026-11-26）：委員長・副、新入会のお名前、宿題まで。入力・編集は editor 以上のまま。スイッチは `constants.js` の `DASHBOARD_OPEN`（true）。本運用で戻すときは false にし、`firestore.rules` の `eventStaff`・`mtTasks` の read を `isActive()`、`newMembers` の read を `isEditor()` に戻す。
 
 ### データ（Firestore）
-- `events` に `kp`（{req, sheet, pub}＝K-PORTAL の依頼・シート入力・掲載の日付）と `apps`（{total, src, at, url}＝申込人数）を追加（誰でも読める。名前は入れない）。
+- `events` に `kp`（{req, sheet, pub}＝K-PORTAL の依頼・シート入力・掲載の日付）と `apps`（{total, byKind, cancelled, src, at, url}＝申込人数と区分ごとの人数。名前は入れない）を追加（誰でも読める。名前は入れない）。
 - 新しいコレクション：`eventStaff/{eventId}`（委員長・副）、`newMembers`（新入会の方）、`mtTasks`（宿題）。書くのは editor 以上、読むのはテスト中は誰でも（本運用では前の2つと宿題をログイン後・新入会を editor だけに戻す）、`dashboard/public`（新入会の人数だけの集計。誰でも読む／editor が書く。editor が画面を開いたときに更新）。`firestore.rules` に追加。
 
 ### 分類③「全国・オンライン」

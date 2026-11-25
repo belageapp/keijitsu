@@ -366,7 +366,10 @@
     const g = goalOf(ev);
     const at = toDate(a.at);
     const bar = g ? `<div class="bar"><div class="${a.total >= g ? 'done' : ''}" style="width:${Math.min(100, Math.round(a.total / g * 100))}%"></div></div>` : '';
+    // 受付名簿の「区分」ごとの人数（会員・ゲスト・社員・家族・世話人・理事など。キャンセルは除いた数）
+    const kinds = a.byKind ? Object.entries(a.byKind).sort((x, y) => y[1] - x[1]).map(([k, n]) => `${esc(k)}${n}`).join('・') : '';
     return `<div class="num">${a.total}<small>名${g ? ' ／ 目標 ' + g : ''}</small></div>${bar}
+      ${kinds ? `<div class="upd" style="color:var(--ink-mid)">${kinds}${a.cancelled ? `（キャンセル${a.cancelled}）` : ''}</div>` : ''}
       <div class="upd">${at ? `${at.getMonth()+1}/${at.getDate()} ${hm(at)} ` : ''}${a.src === 'manual' ? '手入力' : '受付名簿'}${roster}</div>`;
   }
   function kpCell(ev) {
