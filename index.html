@@ -370,7 +370,7 @@
   }
 
   // 全動員日in広島（月1回、会員が全員集まる日。本部の意向で当面この呼び名、USER 2026-11-11）：次回を大きく、以降の日付を並べる
-  //   会場・会費・申込方法は未定のため、日程だけ先に載せる（USER 2026-11-10）
+  //   会場はホリスケアアカデミー3F（USER 2026-11-25）。会費・申込方法は未定（USER 2026-11-10）
   function renderAssembly() {
     const box = document.getElementById('ga-box');
     const now = new Date();
@@ -393,7 +393,7 @@
         <div class="meta">${esc(next.title)}${next.location ? '｜📍 ' + esc(next.location) : ''}</div>
       </div>
       ${rest.length ? `<div class="ga-dates">${rest.map(ev => `<a href="event.html?id=${ev.id}">${md(ev._d)} ${hm(ev._d)}〜</a>`).join('')}</div>` : ''}
-      <div class="note">会場・会費・申込方法は決まりしだいお知らせします。予定表に入れておいてください。</div>
+      <div class="note">会費・申込方法は決まりしだいお知らせします。予定表に入れておいてください。</div>
     </div>`;
   }
 
