@@ -76,7 +76,8 @@
   .field-row > div{flex:1;min-width:0}
   @media (max-width:760px){
     .dhead{display:none}
-    .drow{grid-template-columns:1fr !important;gap:6px}
+    .drow{grid-template-columns:1fr 1fr !important;gap:6px 12px}
+    .drow .c-date,.drow .c-title,.drow .c-wide{grid-column:1 / -1}
     .drow [data-l]::before{content:attr(data-l);display:block;font-size:10.5px;font-weight:800;color:var(--ink-light);margin-bottom:1px}
     .drow .c-date{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
     .drow .c-edit{position:absolute;right:12px;top:10px}
@@ -99,7 +100,7 @@
   <div class="login-note" id="test-note" style="display:none">🧪 テスト中：いまはログインしなくても、実行委員長・新入会の方のお名前・宿題まで見られます。入力・編集は <a href="login.html?next=dashboard.html">ログイン</a>（編集者以上）してから。</div>
   <div class="login-note" id="login-note" style="display:none">🔒 実行委員長・副実行委員長、新入会の方のお名前、今週の宿題は、ログインすると表示されます。 <a href="login.html?next=dashboard.html">ログイン</a></div>
 
-  <div class="tiles" id="tiles"></div>
+  <div class="tiles" id="tiles"><div class="loading">読み込み中...</div></div>
 
   <div class="sec">
     <div class="sec-h"><span class="t">⚠ 要注意</span><span class="s">期間内のイベントで、手当てが要るもの（自動で拾います）</span></div>
@@ -108,12 +109,12 @@
 
   <div class="sec">
     <div class="sec-h"><span class="t">広島イベント</span><span class="s">名前を押すとイベントのページへ。申込人数は受付名簿（AppSheet）から</span></div>
-    <div class="dtable" id="hiro"></div>
+    <div class="dtable" id="hiro"><div class="loading">読み込み中...</div></div>
   </div>
 
   <div class="sec">
     <div class="sec-h"><span class="t">経実会イベント（全国・オンライン）</span><span class="s">グローアップ・CL・トークライブなど。広島からの申込人数</span></div>
-    <div class="dtable" id="nat"></div>
+    <div class="dtable" id="nat"><div class="loading">読み込み中...</div></div>
   </div>
 
   <div class="sec">
@@ -321,7 +322,7 @@
         <div class="c-small" data-l="場所">${ev.location ? esc(ev.location) : '<span class="muted">未定</span>'}</div>
         <div class="c-small" data-l="実行委員長／副">${chairCell(ev)}</div>
         <div data-l="申込">${appsCell(ev)}</div>
-        <div data-l="K-PORTAL 掲載">${kpCell(ev)}</div>
+        <div class="c-wide" data-l="K-PORTAL 掲載">${kpCell(ev)}</div>
         <div class="c-edit">${editor ? `<button class="icon-btn" data-edit="${ev.id}" title="状況を編集">✎</button>` : ''}</div>
       </div>`).join('');
     bindEdit(el);
@@ -480,10 +481,10 @@
       const lm = lastMove(m);
       const stalled = isStalled(m);
       return `<div class="drow g-nm">
-        <div style="font-weight:800" data-l="お名前">${esc(m.name)}${m.memo ? `<div class="upd">${esc(m.memo)}</div>` : ''}</div>
+        <div class="c-wide" style="font-weight:800" data-l="お名前">${esc(m.name)}${m.memo ? `<div class="upd">${esc(m.memo)}</div>` : ''}</div>
         <div class="c-small" data-l="入会日">${mdS(m.joinedAt)}</div>
         <div class="c-small" data-l="声かけ担当">${m.owner ? esc(m.owner) : '<span class="muted">—</span>'}</div>
-        <div data-l="済んだこと">${NEW_MEMBER_STEPS.map(s => m.steps?.[s.key] ? `<span class="st ok">✓ ${s.label} ${mdS(m.steps[s.key])}</span>` : `<span class="st no">○ ${s.label}</span>`).join('')}</div>
+        <div class="c-wide" data-l="済んだこと">${NEW_MEMBER_STEPS.map(s => m.steps?.[s.key] ? `<span class="st ok">✓ ${s.label} ${mdS(m.steps[s.key])}</span>` : `<span class="st no">○ ${s.label}</span>`).join('')}</div>
         <div class="c-small" data-l="最後の動き">${lm ? mdS(lm) : ''}${stalled ? `<div><span class="st warn">! ${Math.floor((today0() - ymdDate(lm)) / DAY)}日 動きなし</span></div>` : ''}</div>
         <div class="c-edit">${editor ? `<button class="icon-btn" data-nm="${m.id}" title="編集">✎</button>` : ''}</div>
       </div>`;
