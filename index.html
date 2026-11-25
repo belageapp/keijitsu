@@ -161,8 +161,8 @@
   import { collection, getDocs, addDoc, updateDoc, doc, serverTimestamp, query, orderBy }
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
   import { db } from './firebase-config.js';
-  import { optionalAuth, renderTopbar, canEdit } from './auth.js?v=1.10.0';
-  import { EVENT_TYPES, eventTypeBadge, MOBILIZATION_TYPES, eventTypeOptionsInner, EVENT_CATEGORIES, eventCategory, eventCategoryBadge, eventCategoryOptionsInner, HQ_EVENTS_URL, applySiteName, FEATURES } from './constants.js?v=1.10.0';
+  import { optionalAuth, renderTopbar, canEdit } from './auth.js?v=1.11.0';
+  import { EVENT_TYPES, eventTypeBadge, MOBILIZATION_TYPES, eventTypeOptionsInner, EVENT_CATEGORIES, eventCategory, eventCategoryBadge, eventCategoryOptionsInner, HQ_EVENTS_URL, applySiteName, FEATURES } from './constants.js?v=1.11.0';
 
   let me = null;
   let allEvents = [];
@@ -176,9 +176,17 @@
   // 種別セレクトを構築（モーダル用・絞り込み用）
   document.getElementById('ev-type').innerHTML =
     '<option value="">（未設定）</option>' + eventTypeOptionsInner();
-  // 絞り込みの種別は「in広島」の種別だけ（全国の種別は K-PORTAL 側のため）
-  document.getElementById('type-filter').innerHTML =
-    '<option value="">すべての種別</option>' + EVENT_TYPES.filter(t => t.endsWith('in広島')).map(t => `<option value="${t}">${t}</option>`).join('');
+  // 絞り込みの種別は「in広島」の種別＋実際に登録されている全国・オンラインの種別（分類③、v1.11.0）
+  function buildTypeFilter() {
+    const hiro = EVENT_TYPES.filter(t => t.endsWith('in広島'));
+    const used = new Set(allEvents.map(ev => ev.eventType));
+    const nat = EVENT_TYPES.filter(t => !t.endsWith('in広島') && used.has(t));
+    document.getElementById('type-filter').innerHTML =
+      '<option value="">すべての種別</option>' + hiro.map(t => `<option value="${t}">${t}</option>`).join('')
+      + (nat.length ? '<option disabled>──────────</option>' + nat.map(t => `<option value="${t}">${t}</option>`).join('') : '');
+    document.getElementById('type-filter').value = typeFilter;
+  }
+  buildTypeFilter();
   document.getElementById('type-filter').onchange = (e) => { typeFilter = e.target.value; render(); };
   document.getElementById('ev-category').innerHTML =
     '<option value="">（未設定）</option>' + eventCategoryOptionsInner();
@@ -250,6 +258,7 @@
     try {
       const snap = await getDocs(query(collection(db, 'events'), orderBy('startAt', 'asc')));
       allEvents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      buildTypeFilter();
       buildMonthStrip();
       renderSpecialAlerts();
       renderAssembly();
@@ -277,7 +286,7 @@
     if (!rows.length) { el.innerHTML = '<div class="empty">該当するイベントはありません</div>'; return; }
 
     if (view === 'cat') {
-      // 分類別：①→②→未分類の順。並びは各分類の中で日付順
+      // 分類別：①→②→③→未分類の順。並びは各分類の中で日付順
       const groups = [...EVENT_CATEGORIES.map(c => ({ ...c, rows: rows.filter(r => r.category === c.key) })),
                       { key:'', label:'その他のイベント', sub:'分類が未設定のイベント', rows: rows.filter(r => !eventCategory(r.category)) }]
                      .filter(g => g.rows.length);

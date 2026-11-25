@@ -40,6 +40,7 @@ export const FEATURES = { apply: true, attendance: false, members: false, regist
 export const EVENT_CATEGORIES = [
   { key:'exchange', label:'① 交流・対話・仲間づくり', sub:'広島チームの会｜申込は調整さん', bg:'#E1F1E7', color:'#1F6E48' },
   { key:'learning', label:'② 学び・実践・伝播',       sub:'経実会のイベント｜申込は申込サイト', bg:'#DCEBFF', color:'#12508C' },
+  { key:'online',   label:'③ 全国・オンライン',       sub:'他県・オンライン開催の経実会イベント｜申込は K-PORTAL', bg:'#EEE9FB', color:'#5A47A0' },
 ];
 export function eventCategory(key) {
   return EVENT_CATEGORIES.find(c => c.key === key) || null;
@@ -155,3 +156,27 @@ export function mobilizationGoal(count = HIROSHIMA_MEMBER_COUNT) {
 
 // その他出席者の区分
 export const OTHER_CATEGORIES = ['県外', '本部役員', '講演者', 'その他'];
+
+// ── リーダーMT ダッシュボード（dashboard.html）────────────────
+// K-PORTAL への掲載が要る広島の種別（ランチ・フォローMTGは調整さんなので対象外）
+export const KPORTAL_TYPES = ['特別講演in広島', '定例会in広島', '近未来in広島', 'オリエンin広島', '全動員日in広島'];
+export function needsKportal(ev) {
+  return ev.category === 'learning' || KPORTAL_TYPES.includes(ev.eventType) || !!(ev.kp && ev.kp.req);
+}
+// K-PORTAL に載ったか：申込URLが K-PORTAL（keijitsu.shikuminet.jp）なら掲載済みとみなす
+export function isOnKportal(ev) {
+  return /keijitsu\.shikuminet\.jp/.test(ev.applyUrl || '') || !!(ev.kp && ev.kp.pub);
+}
+// 新入会の方の段階（仮。段階の名前と順番は代表が決める）
+export const NEW_MEMBER_STEPS = [
+  { key:'interview', label:'面談' },
+  { key:'fivestep',  label:'5STEP' },
+  { key:'orien',     label:'オリエン' },
+  { key:'growup',    label:'グローアップ' },
+  { key:'basic',     label:'ベーシック' },
+];
+// テスト中は未ログインでも委員長・新入会のお名前・宿題を見せる（USER 2026-11-26）。
+//   本運用で戻すときは false にし、firestore.rules の eventStaff・newMembers・mtTasks の read も戻す
+export const DASHBOARD_OPEN = true;
+// 「最近入会」とみなす期間（日）
+export const NEW_MEMBER_DAYS = 180;

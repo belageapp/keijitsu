@@ -82,5 +82,30 @@ service cloud.firestore {
         allow write: if isActive() && (uid == request.auth.uid || isEditor());
       }
     }
+
+    // ── リーダーMT ダッシュボード（dashboard.html、2026-11-25 代表の決定）──
+    // 実行委員長・副（名前が入る）：ログインした会員が閲覧／editor 以上が編集
+    // ※ テスト中（USER 2026-11-26）は未ログインでも読める。本運用で戻すときは read を isActive() に
+    match /eventStaff/{eventId} {
+      allow read: if true;
+      allow write: if isEditor();
+    }
+    // 新入会の方の進み具合（氏名が入る）：editor 以上だけ
+    // ※ テスト中（USER 2026-11-26）は未ログインでも読める。本運用で戻すときは read を isEditor() に
+    match /newMembers/{id} {
+      allow read: if true;
+      allow write: if isEditor();
+    }
+    // 今週の宿題（担当の名前が入る）：ログインした会員が閲覧／editor 以上が編集
+    // ※ テスト中（USER 2026-11-26）は未ログインでも読める。本運用で戻すときは read を isActive() に
+    match /mtTasks/{id} {
+      allow read: if true;
+      allow write: if isEditor();
+    }
+    // 公開してよい集計（新入会の人数だけ。名前は入れない）：誰でも閲覧／editor 以上が書く
+    match /dashboard/{docId} {
+      allow read: if true;
+      allow write: if isEditor();
+    }
   }
 }
