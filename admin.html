@@ -19,6 +19,10 @@
     <div class="page-title"><span class="ico">⚙️</span>会員管理 <span id="pendingNote"></span></div>
     <button class="btn btn-primary" id="inviteBtn">＋ 会員を招待</button>
   </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+    <a class="btn btn-outline" href="request.html">📮 K-PORTAL 掲載依頼（イベントをまとめて登録して奥村さんへ）</a>
+    <a class="btn btn-outline" href="dashboard.html">📊 リーダーMT ダッシュボード</a>
+  </div>
   <div class="card tbl-wrap">
     <table>
       <thead><tr><th>氏名</th><th>メール</th><th>会社名</th><th>権限</th><th>状態</th><th>操作</th></tr></thead>
@@ -84,7 +88,7 @@
   import { initializeApp, deleteApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
   import { getAuth } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
   import { db, firebaseConfig } from './firebase-config.js';
-  import { requireAuth, renderTopbar, isAdmin, ROLE_LABELS } from './auth.js?v=1.11.0';
+  import { requireAuth, renderTopbar, isAdmin, ROLE_LABELS } from './auth.js?v=1.12.0';
 
   let me = null, users = [];
   function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}

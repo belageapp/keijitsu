@@ -94,7 +94,8 @@
       <div class="page-title"><span class="ico">📊</span>リーダーMT ダッシュボード</div>
       <div class="dash-sub" id="asof"></div>
     </div>
-    <div class="seg" id="range" style="margin-left:auto">
+    <a class="btn btn-outline btn-sm" id="req-link" href="request.html" style="display:none;margin-left:auto">📮 K-PORTAL 掲載依頼</a>
+    <div class="seg" id="range">
       <div data-d="28">4週間</div><div class="active" data-d="92">3か月</div><div data-d="183">6か月</div>
     </div>
   </div>
@@ -187,8 +188,8 @@
   import { collection, getDocs, getDoc, setDoc, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy }
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
   import { db } from './firebase-config.js';
-  import { optionalAuth, renderTopbar, canEdit } from './auth.js?v=1.11.0';
-  import { eventTypeBadge, eventCategoryBadge, needsKportal, isOnKportal, NEW_MEMBER_STEPS, NEW_MEMBER_DAYS, DASHBOARD_OPEN } from './constants.js?v=1.11.0';
+  import { optionalAuth, renderTopbar, canEdit } from './auth.js?v=1.12.0';
+  import { eventTypeBadge, eventCategoryBadge, needsKportal, isOnKportal, NEW_MEMBER_STEPS, NEW_MEMBER_DAYS, DASHBOARD_OPEN } from './constants.js?v=1.12.0';
 
   const WD = ['日','月','火','水','木','金','土'];
   const DAY = 86400000;
@@ -223,6 +224,7 @@
     me = await optionalAuth();
     editor = canEdit(me);
     renderTopbar(me, 'dashboard');
+    if (editor) document.getElementById('req-link').style.display = 'inline-block';
     if (DASHBOARD_OPEN) document.getElementById('test-note').style.display = 'block';
     else if (!me) document.getElementById('login-note').style.display = 'block';
     await load();

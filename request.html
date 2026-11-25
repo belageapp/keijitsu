@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>K-PORTAL 掲載依頼｜経営実践研究会 広島会員 情報共有アプリ</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wrap{max-width:1080px}
+  .sec{margin-bottom:20px}
+  .sec-h{font-size:15px;font-weight:900;margin:0 2px 4px}
+  .sec-s{font-size:12px;color:var(--ink-mid);margin:0 2px 8px}
+  .rq-row{display:grid;grid-template-columns:150px 140px 92px 92px minmax(180px,1.4fr) minmax(150px,1fr) 34px;gap:8px;align-items:end;padding:10px 14px;border-bottom:1px solid var(--border)}
+  .rq-row:last-child{border-bottom:none}
+  .rq-row label{display:block;font-size:10.5px;font-weight:800;color:var(--ink-light);margin-bottom:2px}
+  .rq-row input,.rq-row select{width:100%;padding:7px 8px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:#fff}
+  .rq-row .type-sel{margin-top:4px}
+  .rq-add{display:flex;gap:8px;flex-wrap:wrap;padding:10px 14px;background:#F7FAFD;border-top:1px solid var(--border)}
+  .pick{display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border-bottom:1px solid var(--border);font-size:13.5px;cursor:pointer}
+  .pick:last-child{border-bottom:none}
+  .pick input{margin-top:4px;width:16px;height:16px}
+  .pick .m{font-size:11.5px;color:var(--ink-mid)}
+  #msg{width:100%;min-height:260px;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:13.5px;line-height:1.7}
+  .go{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+  .note{font-size:12px;color:var(--ink-mid);line-height:1.7}
+  .x{width:34px;height:34px;border:1.5px solid var(--border);border-radius:8px;background:#fff;color:var(--ink-mid);cursor:pointer}
+  @media (max-width:760px){
+    .rq-row{grid-template-columns:1fr 1fr;position:relative}
+    .rq-row .wide{grid-column:1 / -1}
+    .rq-row .x{position:absolute;right:10px;top:8px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="page-head">
+    <div>
+      <div class="page-title"><span class="ico">📮</span>K-PORTAL 掲載依頼</div>
+      <div class="note">イベントをまとめて登録し、奥村さんに1通のメッセージで依頼します。依頼した日は自動で記録され、ダッシュボードに出ます。</div>
+    </div>
+    <a class="btn btn-outline btn-sm" href="dashboard.html">📊 ダッシュボード</a>
+  </div>
+
+  <div id="body">
+    <div class="sec">
+      <div class="sec-h">1. 新しく登録して依頼するイベント</div>
+      <div class="sec-s">種類を選ぶと、時間・会場・イベント名の初期値が入ります（変えてもかまいません）。「＋ 行を足す」は直前の行の種類・時間・会場を引き継ぎます。</div>
+      <div class="card" style="padding:0;overflow:hidden"><div id="rows"></div>
+        <div class="rq-add"><button class="btn btn-outline btn-sm" id="addRow">＋ 行を足す</button></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-h">2. 登録済みで、まだ依頼していないイベント</div>
+      <div class="sec-s">K-PORTAL への掲載が要るのに、まだ依頼の記録がないもの。チェックすると一緒に依頼します。</div>
+      <div class="card" style="padding:0;overflow:hidden" id="picks"><div class="loading">読み込み中...</div></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-h">3. 奥村さんへのメッセージ</div>
+      <div class="sec-s">上の内容から自動で作ります。送る前に直してもかまいません（直したあとに上を変えると作り直されます）。</div>
+      <textarea id="msg"></textarea>
+      <div class="go">
+        <button class="btn btn-primary" id="send">📮 依頼文をコピーして Messenger を開く</button>
+        <span class="note" id="send-note"></span>
+      </div>
+      <div class="note" style="margin-top:8px">押すと、①メッセージをコピー ②Messenger を開く ③新しいイベントを登録し、選んだイベントと合わせて「依頼した日＝今日」を記録、の順に動きます。Messenger で奥村さんとの画面に貼って送ってください。</div>
+    </div>
+  </div>
+</div>
+
+<datalist id="venues"></datalist>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { collection, getDocs, addDoc, updateDoc, doc, serverTimestamp, query, orderBy }
+    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+  import { db } from './firebase-config.js';
+  import { requireAuth, renderTopbar, canEdit } from './auth.js?v=1.12.0';
+  import { REQUEST_KINDS, requestKindOf, eventTypeOptionsInner, needsKportal, isOnKportal, OKUMURA_MESSENGER_URL, MESSENGER_TOP_URL } from './constants.js?v=1.12.0';
+
+  const WD = ['日','月','火','水','木','金','土'];
+  const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const escAttr = s => String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const toDate = ts => ts?.toDate ? ts.toDate() : (ts ? new Date(ts) : null);
+  const pad = n => String(n).padStart(2, '0');
+  const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const hm = d => `${d.getHours()}:${pad(d.getMinutes())}`;
+  const mdw = d => `${d.getMonth()+1}/${d.getDate()}（${WD[d.getDay()]}）`;
+
+  let me = null, events = [], rows = [], msgEdited = false;
+
+  (async () => {
+    me = await requireAuth();
+    renderTopbar(me, 'admin');
+    if (!canEdit(me)) { document.getElementById('body').innerHTML = '<div class="empty">このページは編集者以上の方だけが使えます。</div>'; return; }
+    await loadEvents();
+    rows = [newRow(REQUEST_KINDS[0])];
+    renderRows();
+  })();
+
+  async function loadEvents() {
+    const snap = await getDocs(query(collection(db, 'events'), orderBy('startAt', 'asc')));
+    events = snap.docs.map(d => ({ id: d.id, ...d.data(), _d: toDate(d.data().startAt), _e: toDate(d.data().endAt) }));
+    // 会場の候補：これまでのイベントの場所
+    const vs = [...new Set(events.map(e => e.location).filter(Boolean))];
+    document.getElementById('venues').innerHTML = vs.map(v => `<option value="${escAttr(v)}">`).join('');
+    renderPicks();
+  }
+
+  // ── 1. 新しく登録する行 ──
+  function newRow(kind, from) {
+    return { kind: kind.key, date: '', start: from?.start ?? kind.start, end: from?.end ?? kind.end,
+             venue: from?.venue ?? kind.venue, title: from?.title ?? kind.title, eventType: from?.eventType ?? kind.eventType };
+  }
+  const kindOf = key => REQUEST_KINDS.find(k => k.key === key);
+  function renderRows() {
+    const el = document.getElementById('rows');
+    el.innerHTML = rows.map((r, i) => `
+      <div class="rq-row" data-i="${i}">
+        <div><label>種類</label><select data-f="kind">${REQUEST_KINDS.map(k => `<option value="${k.key}" ${k.key === r.kind ? 'selected' : ''}>${k.label}</option>`).join('')}</select>
+          ${r.kind === 'other' ? `<select class="type-sel" data-f="eventType"><option value="">（種別）</option>${eventTypeOptionsInner()}</select>` : ''}</div>
+        <div><label>日付</label><input type="date" data-f="date" value="${r.date}"></div>
+        <div><label>開始</label><input type="time" data-f="start" value="${r.start}"></div>
+        <div><label>終了</label><input type="time" data-f="end" value="${r.end}"></div>
+        <div class="wide"><label>会場</label><input data-f="venue" list="venues" value="${escAttr(r.venue)}"></div>
+        <div class="wide"><label>イベント名（アプリでの表示）</label><input data-f="title" value="${escAttr(r.title)}"></div>
+        <div><button class="x" data-del="${i}" title="この行を消す">×</button></div>
+      </div>`).join('') || '<div class="empty">行がありません</div>';
+    el.querySelectorAll('.type-sel').forEach((s, n) => { const i = +s.closest('.rq-row').dataset.i; s.value = rows[i].eventType || ''; });
+    el.querySelectorAll('[data-f]').forEach(inp => inp.oninput = inp.onchange = () => {
+      const i = +inp.closest('.rq-row').dataset.i, f = inp.dataset.f;
+      if (f === 'kind') { const k = kindOf(inp.value); rows[i] = { ...newRow(k), date: rows[i].date }; renderRows(); return; }
+      rows[i][f] = inp.value;
+      buildMsg();
+    });
+    el.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { rows.splice(+b.dataset.del, 1); renderRows(); });
+    buildMsg();
+  }
+  document.getElementById('addRow').onclick = () => {
+    const last = rows[rows.length - 1];
+    rows.push(last ? { ...newRow(kindOf(last.kind), last), eventType: last.eventType } : newRow(REQUEST_KINDS[0]));
+    renderRows();
+  };
+
+  // ── 2. 登録済みで未依頼 ──
+  function renderPicks() {
+    const now = new Date();
+    const list = events.filter(e => e._d && e._d >= now && needsKportal(e) && !isOnKportal(e) && !(e.kp && e.kp.req));
+    const el = document.getElementById('picks');
+    el.innerHTML = list.length ? list.map(e => `
+      <label class="pick"><input type="checkbox" data-pick="${e.id}">
+        <div><div><b>${mdw(e._d)} ${hm(e._d)}${e._e ? '–' + hm(e._e) : '〜'}</b>　${esc(e.title)}</div>
+          <div class="m">${e.location ? '📍 ' + esc(e.location) : '会場未定'}</div></div></label>`).join('')
+      : '<div class="empty">まだ依頼していないイベントはありません</div>';
+    el.querySelectorAll('[data-pick]').forEach(c => c.onchange = buildMsg);
+  }
+  const picked = () => [...document.querySelectorAll('[data-pick]:checked')].map(c => events.find(e => e.id === c.dataset.pick));
+
+  // ── 3. メッセージ（kj の依頼文 v0.3 の形：種類ごとに日程・時間・会場）──
+  function items() {
+    const fromRows = rows.filter(r => r.date).map(r => {
+      const k = kindOf(r.kind);
+      const d = new Date(`${r.date}T${r.start || '00:00'}`);
+      return { name: k.kpName || r.title, d, start: r.start, end: r.end, venue: r.venue };
+    });
+    const fromPicks = picked().map(e => ({ name: requestKindOf(e.eventType)?.kpName || e.title, d: e._d,
+      start: hm(e._d), end: e._e ? hm(e._e) : '', venue: e.location || '' }));
+    return [...fromRows, ...fromPicks].sort((a, b) => a.d - b.d);
+  }
+  function buildMsg() {
+    if (msgEdited) { document.getElementById('send-note').textContent = '※メッセージを手で直したので、自動の作り直しは止めています（空にすると再開）'; return; }
+    const its = items();
+    const groups = [];
+    its.forEach(it => {
+      let g = groups.find(x => x.name === it.name);
+      if (!g) { g = { name: it.name, subs: [] }; groups.push(g); }
+      const key = `${it.start}|${it.end}|${it.venue}`;
+      let s = g.subs.find(x => x.key === key);
+      if (!s) { s = { key, start: it.start, end: it.end, venue: it.venue, ds: [] }; g.subs.push(s); }
+      s.ds.push(it.d);
+    });
+    const body = groups.map(g => {
+      const n = g.subs.reduce((a, s) => a + s.ds.length, 0);
+      return `■${g.name}（${n}件）\n` + g.subs.map(s =>
+        `日程：${s.ds.map(mdw).join('、')}\n時間：${s.start || '未定'}${s.end ? '〜' + s.end : '〜'}\n会場：${s.venue || '未定'}`).join('\n\n');
+    }).join('\n\n');
+    document.getElementById('msg').value = its.length
+      ? `奥村さん、お疲れさまです。\nK-PORTAL に、広島のイベントの掲載をお願いできますか。全${its.length}件です。\n\n${body}\n\nよろしくお願いします。`
+      : '';
+    document.getElementById('send-note').textContent = its.length ? `${its.length}件` : '日付の入った行か、チェックしたイベントがありません';
+  }
+  document.getElementById('msg').oninput = e => { msgEdited = !!e.target.value.trim(); if (!msgEdited) buildMsg(); };
+
+  // ── 送る：コピー → Messenger → 登録・依頼日の記録 ──
+  document.getElementById('send').onclick = async () => {
+    const text = document.getElementById('msg').value.trim();
+    const newOnes = rows.filter(r => r.date);
+    const picks = picked();
+    if (!text || (!newOnes.length && !picks.length)) { showToast('依頼するイベントがありません'); return; }
+    const bad = newOnes.find(r => !r.start || !r.title || (r.kind === 'other' && !r.eventType));
+    if (bad) { showToast('開始時刻・イベント名（そのほかは種別も）を入れてください'); return; }
+    // ① コピー（押した直後でないとブラウザが許さないので最初に）
+    try { await navigator.clipboard.writeText(text); } catch (e) { showToast('コピーできませんでした。メッセージ欄を選んでコピーしてください'); }
+    // ② Messenger
+    window.open(OKUMURA_MESSENGER_URL || MESSENGER_TOP_URL, '_blank', 'noopener');
+    // ③ 登録と依頼日の記録
+    const btn = document.getElementById('send');
+    btn.disabled = true; btn.textContent = '記録中...';
+    const today = ymd(new Date());
+    try {
+      for (const r of newOnes) {
+        const k = kindOf(r.kind);
+        const type = r.kind === 'other' ? r.eventType : k.eventType;
+        const base = [...events].reverse().find(e => e.eventType === type && e.description);   // 内容文は同じ種別の直近のイベントから引き継ぐ
+        await addDoc(collection(db, 'events'), {
+          title: r.title, category: k.category, eventType: type,
+          startAt: new Date(`${r.date}T${r.start}`), endAt: r.end ? new Date(`${r.date}T${r.end}`) : null,
+          location: r.venue.trim(), description: base?.description || '', roleSheetUrl: '', applyUrl: '', kportalUrl: '',
+          goalMainMembers: 0, goalMainGuests: 0,
+          kp: { req: today, sheet: '', pub: '', reqBy: me.uid },
+          createdBy: me.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+        });
+      }
+      for (const e of picks) await updateDoc(doc(db, 'events', e.id), { 'kp.req': today, 'kp.reqBy': me.uid });
+      showToast(`登録 ${newOnes.length}件・依頼の記録 ${newOnes.length + picks.length}件`);
+      rows = [newRow(REQUEST_KINDS[0])]; msgEdited = false;
+      await loadEvents(); renderRows();
+      document.getElementById('send-note').textContent = `記録しました（${today}）。Messenger で奥村さんに貼って送ってください。`;
+    } catch (e) { showToast('記録に失敗しました：' + e.message); }
+    btn.disabled = false; btn.textContent = '📮 依頼文をコピーして Messenger を開く';
+  };
+
+  function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3500);}
+</script>
+</body>
+</html>

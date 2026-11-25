@@ -180,3 +180,20 @@ export const NEW_MEMBER_STEPS = [
 export const DASHBOARD_OPEN = true;
 // 「最近入会」とみなす期間（日）
 export const NEW_MEMBER_DAYS = 180;
+
+// ── K-PORTAL 掲載依頼（request.html、USER 2026-11-26）────────────────
+// 奥村大祐さんとの Messenger の画面（messenger.com/t/… など）。空なら Messenger のトップを開く
+export const OKUMURA_MESSENGER_URL = '';
+export const MESSENGER_TOP_URL = 'https://www.messenger.com/';
+// 依頼の画面で選ぶ種類。時間・会場・名前の初期値（会場は kj の依頼文 v0.3、USER 2026-11-25）
+const HOLIS_3F = 'ホリスケアアカデミー 3F（広島市中区大手町3-1-7 ユナイテッドMKビル）';
+const HOLIS_4F = 'ホリスケアアカデミー 4F（広島市中区大手町3-1-7 ユナイテッドMKビル）';
+export const REQUEST_KINDS = [
+  { key:'assembly', label:'全動員日',           eventType:'全動員日in広島', category:'exchange', title:'全動員日 → 懇親会', kpName:'全動員日',           start:'18:00', end:'19:30', venue:HOLIS_3F },
+  { key:'orien',    label:'オリエンテーション', eventType:'オリエンin広島', category:'learning', title:'オリエンテーション', kpName:'オリエンテーション', start:'15:00', end:'18:00', venue:HOLIS_3F },
+  { key:'special',  label:'特別講演',           eventType:'特別講演in広島', category:'learning', title:'特別講演 → 懇親会', kpName:'特別講演',           start:'18:00', end:'',      venue:'' },
+  { key:'other',    label:'そのほか',           eventType:'',               category:'learning', title:'',                 kpName:'',                 start:'',      end:'',      venue:'' },
+];
+export function requestKindOf(eventType) {
+  return REQUEST_KINDS.find(k => k.eventType && k.eventType === eventType) || null;
+}
