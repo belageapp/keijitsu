@@ -457,7 +457,9 @@
   }
   const allDone = m => NEW_MEMBER_STEPS.every(s => m.steps?.[s.key]);
   const isRecent = m => m.joinedAt && (today0() - ymdDate(m.joinedAt)) / DAY <= NEW_MEMBER_DAYS;
-  const isStalled = m => !allDone(m) && lastMove(m) && (today0() - ymdDate(lastMove(m))) / DAY > STALL_DAYS;
+  // 済んだことを1つも記録していない方は「止まっている」に数えない（記録がないだけのため）
+  const anyDone = m => NEW_MEMBER_STEPS.some(s => m.steps?.[s.key]);
+  const isStalled = m => anyDone(m) && !allDone(m) && lastMove(m) && (today0() - ymdDate(lastMove(m))) / DAY > STALL_DAYS;
 
   function summarize() {
     const rec = members.filter(isRecent);
@@ -476,7 +478,7 @@
   function renderNewMembers() {
     const el = document.getElementById('nm');
     const canSee = editor || DASHBOARD_OPEN;
-    document.getElementById('nm-sub').textContent = `入会から${NEW_MEMBER_DAYS}日以内の方。${canSee ? '' : 'お名前はリーダー・世話人がログインしたときだけ表示'}`;
+    document.getElementById('nm-sub').textContent = `マイページの会員名簿（広島県・入会半年以内）から平日に自動で取り込み。${canSee ? '' : 'お名前はリーダー・世話人がログインしたときだけ表示'}`;
     const nm = pub?.nm;
     const stepTiles = nm ? `<div class="tiles" style="margin-bottom:10px">
         ${tile('新入会', `${nm.total}<small>名</small>`, '')}
@@ -497,7 +499,7 @@
       const lm = lastMove(m);
       const stalled = isStalled(m);
       return `<div class="drow g-nm">
-        <div class="c-wide" style="font-weight:800" data-l="お名前">${esc(m.name)}${m.memo ? `<div class="upd">${esc(m.memo)}</div>` : ''}</div>
+        <div class="c-wide" style="font-weight:800" data-l="お名前">${esc(m.name)}${m.introducer ? `<div class="upd">紹介 ${esc(m.introducer)}</div>` : ''}${m.memo ? `<div class="upd">${esc(m.memo)}</div>` : ''}</div>
         <div class="c-small" data-l="入会日">${mdS(m.joinedAt)}</div>
         <div class="c-small" data-l="声かけ担当">${m.owner ? esc(m.owner) : '<span class="muted">—</span>'}</div>
         <div class="c-wide" data-l="済んだこと">${NEW_MEMBER_STEPS.map(s => m.steps?.[s.key] ? `<span class="st ok">✓ ${s.label} ${mdS(m.steps[s.key])}</span>` : `<span class="st no">○ ${s.label}</span>`).join('')}</div>
