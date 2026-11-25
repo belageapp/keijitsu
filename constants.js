@@ -179,7 +179,7 @@ export const NEW_MEMBER_STEPS = [
 //   本運用で戻すときは false にし、firestore.rules の eventStaff・newMembers・mtTasks の read も戻す
 export const DASHBOARD_OPEN = true;
 // 「最近入会」とみなす期間（日）
-export const NEW_MEMBER_DAYS = 180;
+export const NEW_MEMBER_DAYS = 183;   // マイページの「入会日：半年以内」に合わせる（2026-11-26）
 
 // ── K-PORTAL 掲載依頼（request.html、USER 2026-11-26）────────────────
 // 奥村大祐さんとの Messenger の画面（messenger.com/t/… など）。空なら Messenger のトップを開く

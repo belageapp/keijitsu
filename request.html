@@ -77,8 +77,8 @@
   import { collection, getDocs, addDoc, updateDoc, doc, serverTimestamp, query, orderBy }
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
   import { db } from './firebase-config.js';
-  import { requireAuth, renderTopbar, canEdit } from './auth.js?v=1.12.0';
-  import { REQUEST_KINDS, requestKindOf, eventTypeOptionsInner, needsKportal, isOnKportal, OKUMURA_MESSENGER_URL, MESSENGER_TOP_URL } from './constants.js?v=1.12.0';
+  import { requireAuth, renderTopbar, canEdit } from './auth.js?v=1.12.1';
+  import { REQUEST_KINDS, requestKindOf, eventTypeOptionsInner, needsKportal, isOnKportal, OKUMURA_MESSENGER_URL, MESSENGER_TOP_URL } from './constants.js?v=1.12.1';
 
   const WD = ['日','月','火','水','木','金','土'];
   const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
