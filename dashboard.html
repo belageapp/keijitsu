@@ -12,6 +12,7 @@
   .seg{display:inline-flex;border:1.5px solid var(--border);border-radius:20px;overflow:hidden;background:#fff}
   .seg div{padding:6px 12px;font-size:12px;font-weight:700;color:var(--ink-mid);cursor:pointer}
   .seg div.active{background:var(--indigo);color:#fff}
+  .sel-cat{padding:6px 12px;border:1.5px solid var(--border);border-radius:20px;font-family:inherit;font-size:12px;font-weight:700;color:var(--ink-mid);background:#fff}
   .login-note{margin-bottom:14px;padding:10px 14px;border-radius:10px;background:#fff;border:1px dashed var(--border);font-size:12.5px;color:var(--ink-mid)}
   .login-note a{color:var(--indigo);font-weight:700;text-decoration:underline}
   .sec{margin-bottom:22px}
@@ -94,9 +95,12 @@
       <div class="page-title"><span class="ico">📊</span>リーダーMT ダッシュボード</div>
       <div class="dash-sub" id="asof"></div>
     </div>
-    <a class="btn btn-outline btn-sm" id="req-link" href="request.html" style="display:none;margin-left:auto">📮 K-PORTAL 掲載依頼</a>
+    <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <a class="btn btn-outline btn-sm" id="req-link" href="request.html" style="display:none">📮 K-PORTAL 掲載依頼</a>
     <div class="seg" id="range">
-      <div data-d="28">4週間</div><div class="active" data-d="92">3か月</div><div data-d="183">6か月</div>
+      <div data-d="28">4週間</div><div data-d="92">3か月</div><div data-d="183">6か月</div><div class="active" data-d="0">すべて</div>
+    </div>
+    <select id="cat" class="sel-cat"></select>
     </div>
   </div>
   <div class="login-note" id="test-note" style="display:none">🧪 テスト中：いまはログインしなくても、実行委員長・新入会の方のお名前・宿題まで見られます。入力・編集は <a href="login.html?next=dashboard.html">ログイン</a>（編集者以上）してから。</div>
@@ -189,7 +193,7 @@
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
   import { db } from './firebase-config.js';
   import { optionalAuth, renderTopbar, canEdit } from './auth.js?v=1.12.0';
-  import { eventTypeBadge, eventCategoryBadge, needsKportal, isOnKportal, NEW_MEMBER_STEPS, NEW_MEMBER_DAYS, DASHBOARD_OPEN } from './constants.js?v=1.12.0';
+  import { eventTypeBadge, eventCategoryBadge, EVENT_CATEGORIES, needsKportal, isOnKportal, NEW_MEMBER_STEPS, NEW_MEMBER_DAYS, DASHBOARD_OPEN } from './constants.js?v=1.12.0';
 
   const WD = ['日','月','火','水','木','金','土'];
   const DAY = 86400000;
@@ -200,7 +204,7 @@
 
   let me = null, editor = false;
   let events = [], staff = {}, members = [], tasks = [], pub = null;
-  let rangeDays = 92, nmAll = false;
+  let rangeDays = 0, catFilter = '', nmAll = false;   // 0＝すべて（USER 2026-11-26：初めはすべて表示）
 
   const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const escAttr = s => String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
@@ -219,6 +223,9 @@
     document.querySelectorAll('#range div').forEach(x => x.classList.remove('active'));
     b.classList.add('active'); rangeDays = +b.dataset.d; renderAll();
   });
+  // 分類（①②③）で絞り込む
+  document.getElementById('cat').innerHTML = '<option value="">すべての分類</option>' + EVENT_CATEGORIES.map(c => `<option value="${c.key}">${c.label}</option>`).join('');
+  document.getElementById('cat').onchange = e => { catFilter = e.target.value; renderAll(); };
 
   (async () => {
     me = await optionalAuth();
@@ -253,7 +260,8 @@
   function inRange(ev) {
     if (!ev._d) return false;
     const left = daysUntil(ev._d);
-    return left >= 0 && left <= rangeDays;
+    if (catFilter && ev.category !== catFilter) return false;
+    return left >= 0 && (!rangeDays || left <= rangeDays);
   }
 
   function renderAll() {
@@ -274,7 +282,7 @@
     const kpOk = kpNeed.filter(isOnKportal).length;
     const appsSum = hiro.reduce((a, ev) => a + (ev.apps?.total || 0), 0);
     const nm = pub?.nm;
-    const label = { 28:'4週間', 92:'3か月', 183:'6か月' }[rangeDays];
+    const label = { 0:'すべて', 28:'4週間', 92:'3か月', 183:'6か月' }[rangeDays];
     document.getElementById('tiles').innerHTML = [
       next ? tile('次の広島イベント', `${daysUntil(next._d) === 0 ? '本日' : 'あと' + daysUntil(next._d) + '<small>日</small>'}`, `${md(next._d)} ${esc(next.title)}`)
            : tile('次の広島イベント', '—', '期間内の予定なし'),

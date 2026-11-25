@@ -16,6 +16,7 @@ Firebase（Auth / Firestore / Storage）＋ 静的HTML/JS、GitHub Pages（belag
 - イベント一覧の「＋ イベント追加」は残す（USER）。K-PORTAL に依頼しない調整さんのイベント用。
 - 予定シートに載ったかは、Mac の同期スクリプト（平日 8:00・12:30）が本部の予定シートを見て自動で `kp.sheet` を入れる（地域＝広島・同じ日・イベント名の言葉で突き合わせ）。
 - `constants.js` に `OKUMURA_MESSENGER_URL`・`REQUEST_KINDS`・`requestKindOf`。各ページの読み込み版を `?v=1.12.0` に。
+- ダッシュボード：期間の既定を「すべて」に（4週間・3か月・6か月も選べる）、分類（①②③）で絞り込むセレクトを追加（USER 2026-11-26）。
 
 ---
 
