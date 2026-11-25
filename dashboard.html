@@ -62,6 +62,7 @@
   .st.ok{background:#E3F4F1;color:#1F6E63}
   .st.no{background:#F1F4F7;color:#6B7C8C}
   .st.warn{background:#FDEDE5;color:#B2481F}
+  .st.mid{background:#E4F1FB;color:#1C5E94}
   .icon-btn{width:34px;height:30px;border:1.5px solid var(--border);border-radius:8px;background:#fff;color:var(--ink-mid);cursor:pointer;font-size:13px}
   .icon-btn:hover{border-color:var(--indigo);color:var(--indigo)}
   /* 宿題 */
@@ -313,7 +314,7 @@
   // ── 広島イベント ──
   function renderHiro(rows) {
     const el = document.getElementById('hiro');
-    const head = `<div class="drow dhead g-hiro"><div>日時</div><div>イベント</div><div>場所</div><div>実行委員長／副</div><div>申込</div><div>K-PORTAL 掲載</div><div></div></div>`;
+    const head = `<div class="drow dhead g-hiro"><div>日時</div><div>イベント</div><div>場所</div><div>実行委員長／副</div><div>申込</div><div>K-PORTAL 掲載の段階</div><div></div></div>`;
     if (!rows.length) { el.innerHTML = '<div class="empty">期間内の広島イベントはありません</div>'; return; }
     el.innerHTML = head + rows.map(ev => `
       <div class="drow g-hiro">
@@ -372,15 +373,17 @@
       ${kinds ? `<div class="upd" style="color:var(--ink-mid)">${kinds}${a.cancelled ? `（キャンセル${a.cancelled}）` : ''}</div>` : ''}
       <div class="upd">${at ? `${at.getMonth()+1}/${at.getDate()} ${hm(at)} ` : ''}${a.src === 'manual' ? '手入力' : '受付名簿'}${roster}</div>`;
   }
+  // K-PORTAL 掲載：いまの段階を1つの言葉で出す（印を3つ並べるのは分かりにくい、USER 2026-11-26）
+  //   掲載済み ← 申込URLが K-PORTAL、または載った日あり／シート入力済み・掲載待ち／依頼済み・シート待ち／未依頼
   function kpCell(ev) {
     if (!needsKportal(ev)) return '<span class="muted">—（調整さん）</span>';
     const kp = ev.kp || {};
-    const on = isOnKportal(ev);
-    const step = (done, label, date, late) => done
-      ? `<span class="st ok">✓ ${label}${date ? ' ' + mdS(date) : ''}</span>`
-      : `<span class="st ${late ? 'warn' : 'no'}">${late ? '!' : '○'} ${label}</span>`;
+    if (isOnKportal(ev)) return `<span class="st ok">✓ 掲載済み${kp.pub ? ' ' + mdS(kp.pub) : ''}</span>`;
+    const trail = [kp.req ? `依頼 ${mdS(kp.req)}` : '', kp.sheet ? `シート ${mdS(kp.sheet)}` : ''].filter(Boolean).join(' → ');
+    if (kp.sheet) return `<span class="st mid">シート入力済み・掲載待ち</span><div class="upd">${trail}</div>`;
+    if (kp.req) return `<span class="st mid">依頼済み・シート待ち</span><div class="upd">${trail}</div>`;
     const late = daysUntil(ev._d) <= KP_ALERT_DAYS;
-    return step(!!kp.req || on, '依頼', kp.req) + step(!!kp.sheet || on, 'シート', kp.sheet) + step(on, '掲載', kp.pub, late && !on);
+    return `<span class="st ${late ? 'warn' : 'no'}">${late ? '! ' : ''}未依頼</span>`;
   }
 
   // ── イベントの状況の編集（editor）──
