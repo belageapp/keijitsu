@@ -192,15 +192,15 @@
   import { collection, getDocs, getDoc, setDoc, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy }
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
   import { db } from './firebase-config.js';
-  import { optionalAuth, renderTopbar, canEdit } from './auth.js?v=1.12.1';
-  import { eventTypeBadge, eventCategoryBadge, EVENT_CATEGORIES, needsKportal, isOnKportal, NEW_MEMBER_STEPS, NEW_MEMBER_DAYS, DASHBOARD_OPEN } from './constants.js?v=1.12.1';
+  import { optionalAuth, renderTopbar, canEdit } from './auth.js?v=1.13.0';
+  import { eventTypeBadge, eventCategoryBadge, EVENT_CATEGORIES, needsKportal, isOnKportal, NEW_MEMBER_STEPS, NEW_MEMBER_DAYS, DASHBOARD_OPEN } from './constants.js?v=1.13.0';
 
   const WD = ['日','月','火','水','木','金','土'];
   const DAY = 86400000;
   const STALL_DAYS = 30;          // 最後の動きからこの日数を過ぎたら「止まっている」
   const KP_ALERT_DAYS = 45;       // 開催まで何日を切ったら「K-PORTAL 未掲載」を要注意に出すか
   const APPLY_ALERT_DAYS = 30;    // 開催まで何日を切ったら「目標まであと◯名」を要注意に出すか
-  const CHAIR_TYPES = ['特別講演in広島', '全動員日in広島', '定例会in広島', '近未来in広島', '交流会in広島'];   // 委員長を置く種別（仮）
+  const CHAIR_TYPES = ['特別講演in広島', '全体MTGin広島', '定例会in広島', '近未来in広島', '交流会in広島'];   // 委員長を置く種別（仮）
 
   let me = null, editor = false;
   let events = [], staff = {}, members = [], tasks = [], pub = null;

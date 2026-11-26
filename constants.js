@@ -9,7 +9,7 @@ export const EVENT_TYPES = [
   '交流会in広島',
   'ランチMTGin広島',
   'フォローMTGin広島',
-  '全動員日in広島',
+  '全体MTGin広島',
   '近未来in広島',
   'オリエンin広島',
   'シンポジウム',
@@ -88,7 +88,7 @@ export const EVENT_TYPE_COLOR = {
   '交流会in広島':   { bg:'#FBEAD5', color:'#9C5F16' },
   'ランチMTGin広島': { bg:'#FFF3C9', color:'#8A6A00' },
   'フォローMTGin広島':{ bg:'#FBE4EC', color:'#A0365E' },
-  '全動員日in広島':{ bg:'#E3E8FB', color:'#3346A0' },
+  '全体MTGin広島':{ bg:'#E3E8FB', color:'#3346A0' },
   '近未来in広島':   { bg:'#EFE1FB', color:'#6A2E93' },
   'オリエンin広島': { bg:'#E1F4F0', color:'#1E7A62' },
   '特別講演':   { bg:'#E4F1FB', color:'#1C6BA8' },
@@ -159,7 +159,7 @@ export const OTHER_CATEGORIES = ['県外', '本部役員', '講演者', 'その�
 
 // ── リーダーMT ダッシュボード（dashboard.html）────────────────
 // K-PORTAL への掲載が要る広島の種別（ランチ・フォローMTGは調整さんなので対象外）
-export const KPORTAL_TYPES = ['特別講演in広島', '定例会in広島', '近未来in広島', 'オリエンin広島', '全動員日in広島'];
+export const KPORTAL_TYPES = ['特別講演in広島', '定例会in広島', '近未来in広島', 'オリエンin広島', '全体MTGin広島'];
 export function needsKportal(ev) {
   return ev.category === 'learning' || KPORTAL_TYPES.includes(ev.eventType) || !!(ev.kp && ev.kp.req);
 }
@@ -189,7 +189,7 @@ export const MESSENGER_TOP_URL = 'https://www.messenger.com/';
 const HOLIS_3F = 'ホリスケアアカデミー 3F（広島市中区大手町3-1-7 ユナイテッドMKビル）';
 const HOLIS_4F = 'ホリスケアアカデミー 4F（広島市中区大手町3-1-7 ユナイテッドMKビル）';
 export const REQUEST_KINDS = [
-  { key:'assembly', label:'全動員日',           eventType:'全動員日in広島', category:'exchange', title:'全動員日 → 懇親会', kpName:'全動員日',           start:'18:00', end:'19:30', venue:HOLIS_3F },
+  { key:'assembly', label:'全体MTG',            eventType:'全体MTGin広島', category:'exchange', title:'全体MTG → 懇親会', kpName:'全体MTG',           start:'18:00', end:'19:30', venue:HOLIS_3F },
   { key:'orien',    label:'オリエンテーション', eventType:'オリエンin広島', category:'learning', title:'オリエンテーション', kpName:'オリエンテーション', start:'15:00', end:'18:00', venue:HOLIS_3F },
   { key:'special',  label:'特別講演',           eventType:'特別講演in広島', category:'learning', title:'特別講演 → 懇親会', kpName:'特別講演',           start:'18:00', end:'',      venue:'' },
   { key:'other',    label:'そのほか',           eventType:'',               category:'learning', title:'',                 kpName:'',                 start:'',      end:'',      venue:'' },
