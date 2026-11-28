@@ -93,6 +93,10 @@
   .ev-meta{font-size:12px;color:var(--ink-mid);display:flex;gap:12px;flex-wrap:wrap}
   .ev-meta span{display:inline-flex;align-items:center;gap:3px}
   .ev-past{opacity:.55}
+  .past-fold{display:flex;align-items:center;gap:8px;padding:9px 16px;border-bottom:1px solid var(--border);background:#FAFBFC;font-size:12.5px;font-weight:700;color:var(--ink-mid);cursor:pointer}
+  .past-fold:hover{background:#F1F5F9}
+  .past-fold .h{margin-left:auto;font-size:11px;font-weight:600;color:var(--ink-light)}
+  .past-body{background:#FAFBFC}
 </style>
 </head>
 <body>
@@ -292,7 +296,8 @@
                      .filter(g => g.rows.length);
       el.innerHTML = groups.map(g => `
         <div class="cat-head" style="${g.color ? `color:${g.color};background:${g.bg}66` : ''}"><span class="t">${g.label}</span><span class="s">${g.sub}</span></div>
-        ${g.rows.map(itemHtml).join('')}`).join('');
+        ${rowsWithFold(g.rows, 'c' + g.key)}`).join('');
+      bindFolds(el);
       return;
     }
     // 時系列（既定）：月ごとに見出しを入れて日付順
@@ -305,7 +310,27 @@
     });
     el.innerHTML = months.map(g => `
       <div class="month-head">${g.key === 'none' ? '<span class="m">日時未定</span>' : `<span class="y">${g.key.slice(0,4)}年</span><span class="m">${parseInt(g.key.slice(5),10)}月</span>`}<span class="n">${g.rows.length}件</span></div>
-      ${g.rows.map(itemHtml).join('')}`).join('');
+      ${rowsWithFold(g.rows, 'm' + g.key)}`).join('');
+    bindFolds(el);
+  }
+
+  // 「開催予定」では、今月のうち昨日までに終わったイベントを1行にたたむ（月末ほど終わった回が上にたまるため、USER 2026-11-28）
+  //   当日のイベントは、その日のうちは一覧に残す。押すと開く（開いた状態は描き直しても保つ）
+  const openFolds = new Set();
+  function rowsWithFold(rows, key) {
+    if (filter !== 'upcoming') return rows.map(itemHtml).join('');
+    const t = new Date(); const today = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+    const done = rows.filter(r => r._d && r._d < today), active = rows.filter(r => !(r._d && r._d < today));
+    if (!done.length) return active.map(itemHtml).join('');
+    const open = openFolds.has(key);
+    return `<div class="past-fold" data-fold="${key}">${open ? '▾' : '▸'} 終わったイベント ${done.length}件<span class="h">${open ? 'たたむ' : '押すと表示'}</span></div>
+      ${open ? `<div class="past-body">${done.map(itemHtml).join('')}</div>` : ''}
+      ${active.map(itemHtml).join('')}`;
+  }
+  function bindFolds(el) {
+    el.querySelectorAll('[data-fold]').forEach(f => f.onclick = () => {
+      const k = f.dataset.fold; openFolds.has(k) ? openFolds.delete(k) : openFolds.add(k); render();
+    });
   }
 
   function itemHtml(ev) {
