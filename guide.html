@@ -3,100 +3,91 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>【試作品】アプリのご案内｜経営実践研究会 広島会員 情報共有アプリ</title>
+<meta name="robots" content="noindex">
+<title>使い方｜経営実践研究会 広島会員 情報共有アプリ</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  body{background:linear-gradient(180deg,#E3F1FB 0%,#EEF6FC 240px,#EEF6FC 100%);background-attachment:fixed}
-  .sheet{max-width:760px;margin:0 auto;padding:28px 18px 60px}
-  .hero{background:linear-gradient(135deg,#3BA3E6,#1C6BA8);color:#fff;border-radius:18px;padding:34px 28px;text-align:center;box-shadow:0 6px 24px rgba(28,107,168,.25)}
-  .hero .tag{font-size:12px;font-weight:700;letter-spacing:.18em;opacity:.9}
-  .hero h1{font-size:24px;font-weight:800;margin:10px 0 6px;line-height:1.5}
+  .sheet{max-width:760px;margin:0 auto;padding:24px 16px 60px}
+  .hero{background:linear-gradient(135deg,#3BA3E6,#1C6BA8);color:#fff;border-radius:18px;padding:28px 24px;text-align:center;box-shadow:0 6px 24px rgba(28,107,168,.25)}
+  .hero h1{font-size:22px;font-weight:800;margin:0 0 6px;line-height:1.5}
   .hero p{font-size:14px;opacity:.95;line-height:1.8}
-  .sec-h{font-size:17px;font-weight:800;color:var(--indigo);margin:30px 0 14px;display:flex;align-items:center;gap:8px}
+  .sec-h{font-size:17px;font-weight:800;color:var(--indigo);margin:30px 0 12px;display:flex;align-items:center;gap:8px}
   .sec-h::before{content:'';width:5px;height:20px;background:linear-gradient(180deg,#5BC0F0,#1C6BA8);border-radius:3px}
-  .lead{font-size:14px;line-height:1.9;color:var(--ink);background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px 20px;box-shadow:0 1px 3px var(--shadow)}
-  .feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
-  .feat{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 18px;box-shadow:0 1px 3px var(--shadow)}
-  .feat .ico{font-size:26px}
-  .feat h3{font-size:14px;font-weight:800;margin:8px 0 5px;color:var(--ink)}
-  .feat p{font-size:12.5px;color:var(--ink-mid);line-height:1.8}
-  .steps{counter-reset:s;display:flex;flex-direction:column;gap:12px}
-  .step{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 18px 16px 58px;position:relative;box-shadow:0 1px 3px var(--shadow)}
-  .step::before{counter-increment:s;content:counter(s);position:absolute;left:16px;top:16px;width:28px;height:28px;background:linear-gradient(135deg,#3BA3E6,#1C6BA8);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
+  .sec-s{font-size:12.5px;color:var(--ink-mid);margin:-6px 0 12px}
+  .lead{font-size:14px;line-height:1.9;color:var(--ink);background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 20px;box-shadow:0 1px 3px var(--shadow)}
+  .steps{counter-reset:s;display:flex;flex-direction:column;gap:10px}
+  .step{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 18px 14px 58px;position:relative;box-shadow:0 1px 3px var(--shadow)}
+  .step::before{counter-increment:s;content:counter(s);position:absolute;left:16px;top:14px;width:28px;height:28px;background:linear-gradient(135deg,#3BA3E6,#1C6BA8);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
   .step h3{font-size:14px;font-weight:800;margin-bottom:3px}
   .step p{font-size:13px;color:var(--ink-mid);line-height:1.8}
-  .urlbox{background:#fff;border:2px dashed var(--gold);border-radius:14px;padding:18px 20px;text-align:center;margin-top:8px}
+  .cats{display:flex;flex-direction:column;gap:8px}
+  .cat{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 16px;font-size:13px;line-height:1.7}
+  .cat b{display:inline-block;font-size:12px;padding:2px 10px;border-radius:10px;margin-right:6px}
+  .feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+  .feat{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 18px;box-shadow:0 1px 3px var(--shadow)}
+  .feat .ico{font-size:24px}
+  .feat h3{font-size:14px;font-weight:800;margin:6px 0 4px;color:var(--ink)}
+  .feat p{font-size:12.5px;color:var(--ink-mid);line-height:1.8}
+  .note{font-size:12.5px;color:var(--ink-mid);line-height:1.8;margin-top:10px}
+  .urlbox{background:#fff;border:2px dashed var(--gold);border-radius:14px;padding:16px 20px;text-align:center;margin-top:24px}
   .urlbox .label{font-size:12px;color:var(--ink-mid);font-weight:700}
   .urlbox a{font-size:16px;font-weight:800;color:var(--gold-dark);word-break:break-all}
-  .todo{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 20px;box-shadow:0 1px 3px var(--shadow)}
-  .todo li{font-size:13.5px;line-height:2;color:var(--ink);margin-left:18px}
-  .foot{text-align:center;font-size:12px;color:var(--ink-light);margin-top:30px;line-height:1.9}
-  .noprint{margin-bottom:14px;text-align:right}
-  @media print{ .noprint{display:none} body{background:#fff} .hero{box-shadow:none} }
+  .foot{text-align:center;font-size:12px;color:var(--ink-light);margin-top:28px;line-height:1.9}
 </style>
 </head>
 <body>
 <div class="sheet">
-  <div class="noprint"><button class="btn btn-outline btn-sm" onclick="window.print()">🖨 印刷 / PDF保存</button></div>
-
   <div class="hero">
-    <div class="tag">🚧 PROTOTYPE ／ 試作版</div>
-    <h1>広島会員 情報共有アプリ<br>【試作品】のご提案</h1>
-    <p>「こんなアプリがあったらどうでしょう？」という<br><strong>たたき台（試作品）</strong>です。ぜひ触ってご意見をお聞かせください。</p>
+    <h1>経実会広島 イベント一覧の使い方</h1>
+    <p>広島の特別講演・全体MTG・オリエン・ランチ・フォローMTG と、<br>全国・オンラインのイベントの予定と申込先を、ここ1か所で見られます。<br>ログインは要りません。</p>
   </div>
 
-  <div class="notice" style="background:#FFF6E5;border:1.5px solid #F0C36B;border-radius:14px;padding:16px 20px;margin-top:16px;font-size:13.5px;line-height:1.9;color:#7A5A10">
-    <strong>⚠️ これは試作品（提案段階）です。</strong><br>
-    正式導入が決まったものではありません。実際に使う想定で作った<strong>デモ版</strong>で、機能・デザイン・運用方法はこれから皆さまのご意見をもとに検討・変更していきます。データも試験用のため、予告なくリセットする場合があります。
-  </div>
-
-  <div class="sec-h">どんなもの？</div>
-  <div class="lead">
-    <strong>広島会員専用</strong>を想定した情報共有アプリの試作品です。<br>
-    「本部アプリだとイベント情報が見にくい」「他の会員が何をしているか分かりにくい」——
-    そんな声をヒントに、<strong>広島の会員同士がもっとつながりやすくなったら</strong>という発想で作ってみました。<br>
-    （本部アプリとは別のシステムです。スマホ・パソコンどちらでも動きます。）
-  </div>
-
-  <div class="sec-h">試作でできること（例）</div>
-  <div class="feat-grid">
-    <div class="feat"><div class="ico">📅</div><h3>イベント一覧・詳細</h3><p>広島チームの会と経実会のイベントを「① 交流・対話・仲間づくり」「② 学び・実践・伝播」の分類ごとに一覧表示。イベントの一覧と詳細はログインなしで誰でも見られます。内容やチラシもその場で確認できます。<span data-feature="apply">申込（調整さん・経実会申込サイト）へもボタンから進めます。</span></p></div>
-    <div class="feat" data-feature="attendance"><div class="ico">✋</div><h3>出欠登録</h3><p>本会・懇親会それぞれに出欠を登録。ゲストや自社の社員の参加、その他出席者も登録できます。</p></div>
-    <div class="feat" data-feature="attendance"><div class="ico">🎯</div><h3>動員目標の見える化</h3><p>広島主催の主要イベントは、会員・ゲストの動員目標と達成率をゲージで表示。会の盛り上げに。</p></div>
-    <div class="feat" data-feature="members"><div class="ico">👥</div><h3>会員名簿</h3><p>会社名・志・事業内容・業種を登録して共有。業種バッジやキーワードで“つながりたい仲間”を探せます。</p></div>
-    <div class="feat"><div class="ico">📊</div><h3>役割分担表</h3><p>これまでのGoogleスプレッドシートもアプリ内に表示。役割の割り当ても登録できます。</p></div>
-    <div class="feat"><div class="ico">📸</div><h3>お顔写真</h3><p>その場でカメラ撮影＆トリミングして登録。顔の見える名簿になります。</p></div>
-  </div>
-
-  <div class="sec-h">見てみる</div>
+  <div class="sec-h">イベントを見る・申し込む</div>
   <div class="steps">
-    <div class="step"><h3>イベントの予定を見る</h3><p>下のURLを開くだけ。ログインは要りません。月ごと・分類ごとに絞って見られます。</p></div>
-    <div class="step"><h3>会員管理（管理者のみ）</h3><p>メニューの「会員管理」を押すとログイン画面が出ます。管理者のメールアドレスとパスワードでログインします。</p></div>
+    <div class="step"><h3>アプリを開く</h3><p>下のURLを開くだけです。スマホでもパソコンでも見られます。</p></div>
+    <div class="step"><h3>上のカードで、近い予定を確かめる</h3><p>「特別講演in広島」と「全体MTG」は、いちばん上のカードに次の回と「あと◯日」が出ます。</p></div>
+    <div class="step"><h3>一覧で探す</h3><p>月の帯を押すとその月だけ、分類・種別を選んで絞り込めます。キーワードでも探せます。今月の終わったイベントは「▸ 終わったイベント」の1行にまとまっていて、押すと開きます。</p></div>
+    <div class="step"><h3>「詳細を見る」で内容・会場を見る</h3><p>日時・場所・内容が出ます。</p></div>
+    <div class="step"><h3>「申込」ボタンから申し込む</h3><p>広島チームの会は調整さん、経実会のイベントは K-PORTAL（経実会申込サイト）に進みます。申込先がまだのイベントは「準備中です」と出ます。</p></div>
+  </div>
+
+  <div class="sec-h">イベントの分類</div>
+  <div class="cats">
+    <div class="cat"><b style="background:#E1F1E7;color:#1F6E48">① 交流・対話・仲間づくり</b>広島チームの会（ランチMTG・フォローMTG・全体MTG など）。申込は調整さん。</div>
+    <div class="cat"><b style="background:#DCEBFF;color:#12508C">② 学び・実践・伝播</b>広島で開く経実会のイベント（特別講演・オリエンなど）。申込は K-PORTAL。</div>
+    <div class="cat"><b style="background:#EEE9FB;color:#5A47A0">③ 全国・オンライン</b>オンラインのグローアップ・CL・トークライブなど。広島からも参加できます。申込は K-PORTAL。</div>
+  </div>
+
+  <div class="sec-h">スマホのホーム画面に置く</div>
+  <div class="lead">
+    <b>iPhone（Safari）</b>：アプリを開いて、下の共有ボタン（□に↑）→「ホーム画面に追加」。<br>
+    <b>Android（Chrome）</b>：アプリを開いて、右上の「︙」→「ホーム画面に追加」。<br>
+    アプリのように1回押すだけで開けます。
+  </div>
+
+  <div class="sec-h">リーダー・世話人の方へ</div>
+  <div class="sec-s">リーダー・世話人向けの画面は、リーダーの中で共有しているURLから開きます。入力や編集は、編集者の権限でログインしてから行います。</div>
+  <div class="feat-grid">
+    <div class="feat"><div class="ico">📊</div><h3>リーダーMT ダッシュボード</h3><p>毎週のリーダーMTで見る画面です。広島イベントの日時・場所・実行委員長と副・申込人数・K-PORTAL への掲載の段階、全国・オンラインのイベント、新入会の方の進み具合、今週の宿題が1枚で見られます。手当てが要るものは「要注意」に自動で上がります。</p></div>
+    <div class="feat"><div class="ico">📮</div><h3>K-PORTAL 掲載依頼</h3><p>K-PORTAL に載せたいイベントをまとめて入れ、ボタンを押すと依頼文がコピーされて Messenger「広島運営チーム」が開きます。貼って送るだけです。依頼した日は自動で記録されます。</p></div>
+    <div class="feat"><div class="ico">🔄</div><h3>自動で更新されるもの</h3><p>申込人数（受付名簿）、新入会の方（マイページ）、予定シートへの入力と K-PORTAL への掲載、新入会の方のオリエン・グローアップ・ベーシックは、平日の朝と昼に自動で新しくなります。</p></div>
+    <div class="feat"><div class="ico">✎</div><h3>手で入れるもの</h3><p>実行委員長・副、新入会の方の面談・5STEP・声かけ担当、今週の宿題は、各行の ✎ から入れます。</p></div>
   </div>
 
   <div class="urlbox">
-    <div class="label">▼ アプリはこちら</div>
+    <div class="label">▼ アプリはこちら（ブックマークしておくと便利です）</div>
     <a href="https://belageapp.github.io/keijitsu/">belageapp.github.io/keijitsu/</a>
   </div>
 
-  <div class="sec-h">ぜひご意見をお聞かせください</div>
-  <div class="todo">
-    <ul>
-      <li>実際に<strong>プロフィールやイベント一覧</strong>を触ってみる</li>
-      <li><strong>使いやすさ・分かりにくい点</strong>を教えてください</li>
-      <li>「こんな機能があると良い」という<strong>ご要望</strong>も歓迎です</li>
-      <li>そもそも<strong>導入する価値があるか</strong>のご感想もぜひ</li>
-    </ul>
-  </div>
-
   <div class="foot">
-    経営実践研究会 広島会員 情報共有アプリ【試作品】<br>
-    ※提案・検討段階のデモ版です。ご意見・ご質問は事務局までお寄せください。
+    経営実践研究会 広島会員 情報共有アプリ<br>
+    ご意見・ご質問は世話人・リーダーまでお寄せください。
   </div>
 </div>
 <script type="module">
-  import { FEATURES } from './constants.js?v=1.13.2';
-  document.querySelectorAll('[data-feature]').forEach(el => { if (!FEATURES[el.dataset.feature]) el.remove(); });
+  import { optionalAuth, renderTopbar } from './auth.js?v=1.14.0';
+  const me = await optionalAuth();
+  renderTopbar(me, 'guide');
 </script>
 </body>
 </html>

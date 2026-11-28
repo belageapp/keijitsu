@@ -5,7 +5,7 @@
 import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { auth, db } from './firebase-config.js';
-import { FEATURES } from './constants.js?v=1.13.2';
+import { FEATURES } from './constants.js?v=1.14.0';
 
 export const ROLE_LABELS = {
   admin:  '管理者',
@@ -91,6 +91,7 @@ export function renderTopbar(userData, active) {
     { key: 'events',  label: 'イベント', href: 'index.html' },
   ];
   if (FEATURES.members && userData) links.push({ key: 'members', label: '会員', href: 'members.html' });
+  links.push({ key: 'guide', label: '使い方', href: 'guide.html' });   // 2026-11-28（USER）
   // 会員管理は常にメニューに出す。未ログインで押したときだけログイン画面へ（ログイン後に会員管理へ戻る）
   links.push({ key: 'admin', label: '会員管理', href: userData ? 'admin.html' : 'login.html?next=admin.html' });
 
