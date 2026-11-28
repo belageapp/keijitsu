@@ -184,7 +184,7 @@ export const NEW_MEMBER_DAYS = 183;   // マイページの「入会日：半年
 // ── K-PORTAL 掲載依頼（request.html、USER 2026-11-26）────────────────
 // 依頼の送り先：Messenger グループ「広島運営チーム」に @奥村大祐 を付けて送る（USER 2026-11-28）。
 // グループの画面のリンク（messenger.com/t/… など）。空なら Messenger のトップを開く
-export const OKUMURA_MESSENGER_URL = '';
+export const OKUMURA_MESSENGER_URL = 'https://www.facebook.com/messages/t/897249102770176';   // 広島運営チーム（USER 2026-11-28）
 export const REQUEST_MENTION = '@奥村大祐';
 export const REQUEST_GROUP_NAME = '広島運営チーム';
 export const MESSENGER_TOP_URL = 'https://www.messenger.com/';
