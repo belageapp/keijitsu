@@ -182,8 +182,11 @@ export const DASHBOARD_OPEN = true;
 export const NEW_MEMBER_DAYS = 183;   // マイページの「入会日：半年以内」に合わせる（2026-11-26）
 
 // ── K-PORTAL 掲載依頼（request.html、USER 2026-11-26）────────────────
-// 奥村大祐さんとの Messenger の画面（messenger.com/t/… など）。空なら Messenger のトップを開く
+// 依頼の送り先：Messenger グループ「広島運営チーム」に @奥村大祐 を付けて送る（USER 2026-11-28）。
+// グループの画面のリンク（messenger.com/t/… など）。空なら Messenger のトップを開く
 export const OKUMURA_MESSENGER_URL = '';
+export const REQUEST_MENTION = '@奥村大祐';
+export const REQUEST_GROUP_NAME = '広島運営チーム';
 export const MESSENGER_TOP_URL = 'https://www.messenger.com/';
 // 依頼の画面で選ぶ種類。時間・会場・名前の初期値（会場は kj の依頼文 v0.3、USER 2026-11-25）
 const HOLIS_3F = 'ホリスケアアカデミー 3F（広島市中区大手町3-1-7 ユナイテッドMKビル）';

@@ -37,7 +37,7 @@
   <div class="page-head">
     <div>
       <div class="page-title"><span class="ico">📮</span>K-PORTAL 掲載依頼</div>
-      <div class="note">イベントをまとめて登録し、奥村さんに1通のメッセージで依頼します。依頼した日は自動で記録され、ダッシュボードに出ます。</div>
+      <div class="note">イベントをまとめて登録し、Messenger グループ「広島運営チーム」で @奥村大祐 さんに1通のメッセージで依頼します。依頼した日は自動で記録され、ダッシュボードに出ます。</div>
     </div>
     <a class="btn btn-outline btn-sm" href="dashboard.html">📊 ダッシュボード</a>
   </div>
@@ -58,14 +58,14 @@
     </div>
 
     <div class="sec">
-      <div class="sec-h">3. 奥村さんへのメッセージ</div>
+      <div class="sec-h">3. 奥村さんへのメッセージ（広島運営チームに送る）</div>
       <div class="sec-s">上の内容から自動で作ります。送る前に直してもかまいません（直したあとに上を変えると作り直されます）。</div>
       <textarea id="msg"></textarea>
       <div class="go">
         <button class="btn btn-primary" id="send">📮 依頼文をコピーして Messenger を開く</button>
         <span class="note" id="send-note"></span>
       </div>
-      <div class="note" style="margin-top:8px">押すと、①メッセージをコピー ②Messenger を開く ③新しいイベントを登録し、選んだイベントと合わせて「依頼した日＝今日」を記録、の順に動きます。Messenger で奥村さんとの画面に貼って送ってください。</div>
+      <div class="note" style="margin-top:8px">押すと、①メッセージをコピー ②Messenger を開く ③新しいイベントを登録し、選んだイベントと合わせて「依頼した日＝今日」を記録、の順に動きます。Messenger のグループ「広島運営チーム」に貼って送ってください（先頭の @奥村大祐 は、貼ったあと候補から選び直すと通知が届きます）。</div>
     </div>
   </div>
 </div>
@@ -77,8 +77,8 @@
   import { collection, getDocs, addDoc, updateDoc, doc, serverTimestamp, query, orderBy }
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
   import { db } from './firebase-config.js';
-  import { requireAuth, renderTopbar, canEdit } from './auth.js?v=1.13.0';
-  import { REQUEST_KINDS, requestKindOf, eventTypeOptionsInner, needsKportal, isOnKportal, OKUMURA_MESSENGER_URL, MESSENGER_TOP_URL } from './constants.js?v=1.13.0';
+  import { requireAuth, renderTopbar, canEdit } from './auth.js?v=1.13.1';
+  import { REQUEST_KINDS, requestKindOf, eventTypeOptionsInner, needsKportal, isOnKportal, OKUMURA_MESSENGER_URL, MESSENGER_TOP_URL, REQUEST_MENTION, REQUEST_GROUP_NAME } from './constants.js?v=1.13.1';
 
   const WD = ['日','月','火','水','木','金','土'];
   const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -187,7 +187,7 @@
         `日程：${s.ds.map(mdw).join('、')}\n時間：${s.start || '未定'}${s.end ? '〜' + s.end : '〜'}\n会場：${s.venue || '未定'}`).join('\n\n');
     }).join('\n\n');
     document.getElementById('msg').value = its.length
-      ? `奥村さん、お疲れさまです。\nK-PORTAL に、広島のイベントの掲載をお願いできますか。全${its.length}件です。\n\n${body}\n\nよろしくお願いします。`
+      ? `${REQUEST_MENTION}\n奥村さん、お疲れさまです。\nK-PORTAL に、広島のイベントの掲載をお願いできますか。全${its.length}件です。\n\n${body}\n\nよろしくお願いします。`
       : '';
     document.getElementById('send-note').textContent = its.length ? `${its.length}件` : '日付の入った行か、チェックしたイベントがありません';
   }
@@ -227,7 +227,7 @@
       showToast(`登録 ${newOnes.length}件・依頼の記録 ${newOnes.length + picks.length}件`);
       rows = [newRow(REQUEST_KINDS[0])]; msgEdited = false;
       await loadEvents(); renderRows();
-      document.getElementById('send-note').textContent = `記録しました（${today}）。Messenger で奥村さんに貼って送ってください。`;
+      document.getElementById('send-note').textContent = `記録しました（${today}）。Messenger の「${REQUEST_GROUP_NAME}」に貼って送ってください。`;
     } catch (e) { showToast('記録に失敗しました：' + e.message); }
     btn.disabled = false; btn.textContent = '📮 依頼文をコピーして Messenger を開く';
   };
